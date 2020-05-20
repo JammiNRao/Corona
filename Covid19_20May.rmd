@@ -1,0 +1,452 @@
+---
+title: "A Global Covid19 Pandemic Situation Report"
+author: "JayEnAar"
+date: "19 May 2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE,
+                      warning = FALSE
+                      )
+```
+## About this Report
+
+Since cases of a respiratory illness caused by a novel Corona virus were first reported from Wuhan, China, late in 2019, the disease nCovid19 has grown into a pandemic.  
+
+Almost every country in the World is affected to a greater or lesser degree.  
+Data on the daily count of new cases of the infection and of deaths from it are reported by health authorities and collated by various international agencies and Universities. This report draws on a publicly available data set that is updated every day and published on its website by the European Centre for Disease Control, [downloadable from here](https://opendata.ecdc.europa.eu/covid19/casedistribution/csv).
+
+## Data Analytical Methods
+
+I used R and Rstudio to download the data, load it into R and carry out the data manipulation in order to produce suammries and charts that describe the situation as it unfolds. This report was created in [RMarkdown](rmarkdown.rstudio.com). The charts are produced in [ggplot2](http://ggplot2.org) (credit Wickham H (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4.)  
+
+## The data
+```{r load_libraries, echo = FALSE, message = FALSE, include =FALSE}
+library(tidyverse)
+library(cowplot)
+library(forecast)
+library(gridExtra)
+```
+
+```{r Data_Manipulation, echo = FALSE, include = FALSE}
+data <- read.csv(url("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv"))
+data$countriesAndTerritories <- gsub("United_States_of_America", "USA", data$countriesAndTerritories)
+data$countriesAndTerritories <- gsub("United_Kingdom", "UK", data$countriesAndTerritories)
+d <- data  %>% 
+  mutate(ReportingDate = as.Date(as.character(dateRep), format = "%d/%m/%Y")) %>%
+  group_by(countriesAndTerritories) %>%
+  arrange(ReportingDate, .by_group = TRUE) %>%
+  mutate(CasesToDate = cumsum(cases), 
+         DeathsToDate = cumsum(deaths)) %>%
+  #select(ReportingDate, countriesAndTerritories, cases, deaths, 
+        # CasesToDate, DeathsToDate) %>%
+  mutate(CasesDoublingTime = log(2)/log(CasesToDate/lag(CasesToDate)),
+         DeathsDoublingTime = log(2)/log(DeathsToDate/lag(DeathsToDate)) ) %>%
+  ungroup() %>%
+  rename(Country = countriesAndTerritories,
+         CountryCode = countryterritoryCode,
+         Continent = continentExp
+         )
+  
+sickest <- d %>%
+  group_by(Country) %>%
+  summarise(CasesToDate = max(CasesToDate),
+            DeathsToDate = max(DeathsToDate),
+            DeathRate = round(100 * DeathsToDate/CasesToDate, 1)) %>%
+  arrange(desc(CasesToDate)) %>%
+  ungroup()
+
+## To extract the most recet reporting date for the title in the charts
+RepDate <- d %>% 
+  group_by(Country) %>%
+  summarise(latest = last(ReportingDate))
+
+Date.Upto <- filter(RepDate, Country == "UK")$latest  ## the most recent date for the UK  
+top16countries <- as.character(sickest$Country[1:16])
+
+```
+The data file comprises 11 columns and upwards of 14,000 rows (growing by the day as  data is added to the file each day). The main columns (or fields) of interest are:  
+
+$Reporting Date$: The date of reporting  
+
+$cases$: The number of cases reported in the last 24 hours  
+
+$deaths$: The number of deaths reported in the last 24 hours    
+
+$country$: The official name of the Country or Territory  
+
+$popdata2018$: The 2018 or most recent population figure for the country  
+
+## Plan of the Report
+
+The Report is structured as follows:  
+
+1. Global headlines  
+
+2. Country-wise  comparison.  
+
+3. Time trends for number of cases by country. 
+
+4. Time trends for number of deaths by country.
+
+5. Daily incidence of cases by country 
+
+6. Daily incidence of deaths by country
+
+7. Doubling time for cases by country
+
+    7a. Most recent daily growth rate by country
+
+8. Doubling time for deaths by country
+
+9. The situation in India
+
+## 1. The headlines
+
+Across the `r nrow(sickest)` Countries and Territories of the World there were a total of **`r format(sum(sickest$CasesToDate), big.mark = ",")`** cases and **`r format(sum(sickest$DeathsToDate), big.mark = ",")`** deaths.  
+
+In India there have been **`r format(filter(sickest, Country == "India")$CasesToDate, big.mark = ",")`** cases reported, and  **`r format(filter(sickest, Country == "India")$DeathsToDate, big.mark = ",")`** deaths
+
+## 2. The top 25 most severely affected countries  
+
+America has been excluded because it's huge number of cases would have distorted the chart.  
+
+```{r lollipop, echo = FALSE, fig.height=10, fig.width = 9}
+sickest$Country <- reorder(sickest$Country, sickest$CasesToDate, FUN = identity)
+summary.text <- paste("Worldwide there have been \n", 
+                      format(sum(sickest$CasesToDate), big.mark= ","),
+                      "reported cases and ", 
+                      format(sum(sickest$DeathsToDate), big.mark= ","),
+                      "deaths. \nIndia has had", format( subset(sickest, Country == "India")[[1,2]], big.mark=","),
+                      "cases and", subset(sickest, Country == "India")[[1,3]],"deaths")
+p1 <- ggplot(data =sickest[2:25, ],
+            aes(x=Country, y = CasesToDate)) +
+  geom_point(stat="identity",position="identity", size=3.0, colour = "red") +
+  geom_bar(stat="identity", width = 0.1, fill = "blue") +
+  scale_x_discrete("") + 
+  scale_y_continuous(breaks = c(0,25000,50000, 75000, 400000, 125000, 150000, 175000, 200000, 250000),
+                     labels = c("0", "25k", "50k", "75k", "100k", "125k", "150k", "175k", "200k", "250k"),
+                     name = "Cumulative tally of cases") +
+  coord_flip() +
+  annotate("text", x = 7, y = 150000, label = summary.text, size = 6) +
+  
+  labs(title = "Fig 1. Covid19 across the world. \nThe top 25 countries by number of reported cases", 
+       subtitle = paste("America, with", format(sickest[[1,2]], big.mark=","), "cases and", format(sickest[[1,3]], big.mark = ","), "deaths has been excluded." ),
+       caption = paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                      (c) JayEnAar ", as.character(Date.Upto, format = "%d %b %Y") )
+       ) +
+  theme(panel.border = element_rect(fill = NA, linetype = "solid"))
+p1
+```
+  
+\newpage
+## 3. Cumulative cases - how the numbers grew. 
+
+The 16 countries with the most cases account for `r round(sum(sickest$CasesToDate[1:16]) / sum(sickest$CasesToDate) * 100, 1)`% of the world's tally.The following chart plots the time trend of cumulative cases for these 16 countries. It's important to note that the numbers vary greatly and so the y axis is scaled differently for each. The trend - steeply or gently upward, or flattening - should be the focus of attention.
+
+```{r cases_trend, echo=FALSE, fig.height=8, fig.weight =8}
+p2 <- d %>% #p2 is cumulative cases time trend
+  filter(Country %in% top16countries & ReportingDate > as.Date("2020/03/15")) %>% 
+  ggplot(aes(x = ReportingDate, y = CasesToDate, 
+                 group = Country)) + 
+  geom_line(aes(colour = Country), size = 1.2) +
+  facet_wrap(.~Country, scales = "free") +
+  #scale_x_date(date_breaks = "4 weeks",date_labels = "%b\n %y") +
+  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
+             labels = c("15\nMar", "15\nApr") ) +
+  labs(title = "How the number of cases grew over time",
+       subtitle = "Cumulative tally of cases of Covid19, 16 March 2020 onwards
+Caution:The Y-axis is not the same for each country",
+       caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                       (c) JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+       x = "", y = "Cumulative count of cases")+
+  theme(legend.position = "none",
+        axis.text.x = element_text(size = rel(0.7)))
+p2
+
+```
+
+\newpage
+## 4. Cumulative deaths - how the numbers grew.  
+
+The next chart is similar to the previous chart; but shows the growth in the number of reported deaths from Covid19. The same caveats apply; the y-axis is scaled differently 
+
+```{r deaths_trend, echo=FALSE, warning=FALSE, fig.height=8, fig.weight =8}
+p3 <- d %>%  # p3 is cumulative deaths time trend
+  filter(Country %in% top16countries & ReportingDate > as.Date("2020/03/15")) %>% 
+  ggplot(aes(x = ReportingDate, y = DeathsToDate, 
+             group = Country)) + 
+  geom_line(aes(colour = Country), size = 1.2) +
+  facet_wrap(.~Country, scales = "free") +
+  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
+               labels = c("15Mar", "15Apr") ) +
+  labs(title = "How the number of deaths grew over time",
+       subtitle = "Cumulative tally of deaths from Covid19, 16 March 2020 onwards
+Caution:The Y-axis is not the same for each country",
+       caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                       (c) JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+       x = "", y = "Cumulative count of deaths")+
+  theme(legend.position = "none")
+p3
+
+```
+
+\newpage
+## 5. Daily incidence of cases
+
+The total number of cases upto the present time measures how many people have been affected. The daily number of cases is a measure of how active the epidemic continues to be. Tracking the day-by-day incidence is a good indicator of the effectiveness of control measures. Remember, the data are based on the reporting date, not the date of onset of symptoms or the date of a positive test. Due to the usual administrative problems of weekends and holidays, cases may be reported  with some lag. These fluctuations in day to day numbers are ironed out by taking a 3-day moving average. 
+
+```{r dailycases, echo=FALSE, warning = FALSE, fig.width = 8, fig.height = 8}
+p4 <- d %>% filter(Country %in% top16countries & 
+                     ReportingDate > as.Date("2020/03/15") ) %>% 
+  mutate(MovAverageCases = ma(cases, order = 3)) %>%
+  ggplot(aes(x = ReportingDate, y = MovAverageCases, 
+             group = Country)) + 
+  geom_line(aes(colour = Country), size = 1.2) +
+  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
+               labels = c("15Mar", "15Apr") ) +
+  facet_wrap(.~Country, scales = "free") +
+  labs(title = "The daily number of cases of Covid19",
+       subtitle  = "3-day moving average of the daily number of cases ",
+       caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                      (c) JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+       x = "", y = "Daily Cases")+
+  theme(legend.position = "none")
+p4
+```
+
+\newpage
+## 6. Daily incidence of deaths
+
+This is similar to the previous chart, it plots the 3-day moving average of reported daily deaths; the same caveats apply.
+
+```{r dailydeaths, warning = FALSE, echo = FALSE,fig.width = 8, fig.height = 8}
+p5 <- d %>% filter(Country %in% top16countries & 
+                  ReportingDate > as.Date("2020/03/15") ) %>% 
+  mutate(MovAverageDeaths = ma(deaths, order = 3)) %>%
+  ggplot(aes(x = ReportingDate, y = MovAverageDeaths, 
+             group = Country)) + 
+  geom_line(aes(colour = Country), size = 1.2) +
+  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
+               labels = c("15Mar", "15Apr") ) +
+  facet_wrap(.~Country, scales = "free") +
+  labs(title = "The daily number of deaths from Covid19",
+       subtitle  = "3-day moving average of the daily number of deaths ",
+       caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                      (c) JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+       x = "", y = "Daily Cases")+
+  theme(legend.position = "none")
+p5
+```
+
+\newpage
+## 7. Doubling time for cases  
+
+The time taken for the number of cases to double is a measure of the how infectious the virus is and how effective the control measures have been. I worked out a notional daily doubling time in days by taking the growth rate from one day to the next and applying a standard algebraic formula:  
+
+$D = log(2) / log (Nb/Na)$ where $D$ is the Doubling time, $Nb$ is the number on a given day and $Na$ is the number the previous day. 
+
+Because this number fluctuates widely from one day to the next, I have used 3-day moving average to smooth out the trend. The y-axis is scaled differently for each country and so the charts need to be interpreted with caution.
+
+```{r Cases_doubling, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8}
+p6 <- d %>% filter(Country %in% top16countries & 
+                     ReportingDate > as.Date("2020/03/15") ) %>% 
+  mutate(MovAverageDoublingTime = ma(CasesDoublingTime, order = 3)) %>%
+  ggplot(aes(x = ReportingDate, y = MovAverageDoublingTime, 
+             group = Country)) + 
+  geom_line(aes(colour = Country), size = 1.2) +
+  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
+               labels = c("15Mar", "15Apr") ) +
+  facet_wrap(.~Country, scales = "free") +
+  labs(title = "Doubling time for Cumulative number of cases of Covid19",
+       subtitle  = "3-day moving average of the daily doubling time ",
+       caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                      (c) JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+       x = "", y = "Doubling time in days")+
+  theme(legend.position = "none")
+p6
+```
+
+\newpage
+## 7a. Growth rate across countries
+Countries are at differet stages of the epidemic curve. In section 1 above we looked saw a bar chart comparing countries according to how many people have been infected to date. It might be useful also to compare countries according to the most recent daily growth rate. This transaltes to the current doubling time. The higher the growth rate, the lower the doubling time. India at 11th position in terms of number of cases reported to date, is witnessing a high growth rate,exceeded only by Peru, among the 16 countries with the most cases. 
+
+```{r Growth_Rate, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8 }
+fastest.growers <- d %>% filter(Country %in% top16countries & 
+                     ReportingDate > as.Date("2020/03/15") ) %>%
+    mutate(Growth.Rate = DeathsToDate/lag(DeathsToDate) -1) %>%
+    group_by(Country) %>%
+    summarise(Latest.Growth.Rate = last(Growth.Rate)) %>%
+    mutate(ToHighlight = ifelse(Country == "India", "yes", "No"))
+
+
+fastest.growers$Country <- reorder(fastest.growers$Country, 
+                                   fastest.growers$Latest.Growth.Rate, FUN = identity)
+p.fastestgrowers <- ggplot(fastest.growers, aes(x=Country, y = Latest.Growth.Rate)) + 
+    geom_point(stat="identity",position="identity", size=5.0, colour = "red") +
+    geom_col(aes(fill=ifelse(Country == "India", "A", "B")), width = 0.22) +
+    scale_fill_manual(values = c(A="#FFFF00", B = "#0080FF")) +
+    scale_x_discrete("") + 
+    labs(title = "Latest 1-day growth rate in number of cases",
+         subtitle = "Top 16 countries by number of cases",
+         caption = paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                       © JayEnAar ", as.character(Date.Upto, format = "%d %b %Y") ) ) +
+    scale_y_continuous(breaks = c(0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.1, 0.12),
+                     labels = c("0", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "8%", "10%", "12%"),
+                     name = "") +
+    theme(legend.position = "none") +
+    coord_flip()
+
+p.fastestgrowers
+```
+
+
+\newpage
+## 8. Doubling time for deaths
+
+```{r deaths_doubling, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8}
+p7 <- d %>% filter(Country %in% top16countries & 
+                     ReportingDate > as.Date("2020/03/15") ) %>% 
+  mutate(DeathsMovAverageDoublingTime = ma(DeathsDoublingTime, order = 3)) %>%
+  ggplot(aes(x = ReportingDate, y = DeathsMovAverageDoublingTime, 
+             group = Country)) + 
+  geom_line(aes(colour = Country), size = 1.2) +
+  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
+               labels = c("15Mar", "15Apr") ) +
+  facet_wrap(.~Country, scales = "free") +
+  labs(title = "Doubling time for Cumulative deaths from Covid19",
+       subtitle  = "3-day moving average of the daily doubling time ",
+       caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                      (c) JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+       x = "", y = "Doubling time in days")+
+  theme(legend.position = "none")
+p7
+```
+
+\newpage  
+## 9. The situation in India
+
+India has had relatively few cases and deaths thus far; and this is even before we take into accont the size of the population. It is not unlikely that the reported cases and deaths may underestimate the true state of affairs. The following 5 charts present trends in India using the reported data.
+
+```{r IndiaPlot, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8}
+## India secific charts using cowplot to provide the titles etc
+# 1. Cases and deaths cumulative time charts
+## cases
+p4.india <- d %>% filter(Country == "India" & 
+                           ReportingDate > as.Date("2020/03/15") ) %>% 
+    mutate(MovAverageCases = ma(cases, order = 3)) %>%
+    ggplot(aes(x = ReportingDate, y = MovAverageCases)) + 
+    geom_line(colour = "red", size = 1.2) +
+    scale_x_date(name = "", 
+               breaks = as.Date(c("2020/03/15", "2020/04/01", 
+                                  "2020/04/15", "2020/05/01", "2020/05/15")),
+               labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+    labs(y="")
+  
+#p4.india
+# ggsave(plot=p4.india, 
+#        file =paste0("IndiaCasesTrend", as.character(Date.Upto, format = "%d%m%Y"), ".png" ),
+#        path = "CovidTrackerV2", width = 8, height = 6, units = "in")
+## deaths
+p5.india <- d %>% filter(Country == "India" & 
+                           ReportingDate > as.Date("2020/03/15") ) %>% 
+  mutate(MovAverageDeaths = ma(deaths, order = 3)) %>%
+  ggplot(aes(x = ReportingDate, y = MovAverageDeaths)) + 
+  geom_line(colour = "red", size = 1.2) +
+  scale_x_date(name = "", 
+               breaks = as.Date(c("2020/03/15", "2020/04/01", 
+                                  "2020/04/15", "2020/05/01", "2020/05/15")),
+               labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+    labs(y="")
+#p5.india
+# ggsave(plot=p5.india, 
+#        file =paste0("IndiaDeathsTrend", as.character(Date.Upto, format = "%d%m%Y"), ".png" ),
+#        path = "CovidTrackerV2", width = 8, height = 6, units = "in")
+# 2. Doubling tme for cases and deaths
+##doubling time for cases
+p6.india <- d %>% filter(Country == "India" & 
+                           ReportingDate > as.Date("2020/03/15") ) %>% 
+  mutate(MovAverageDoublingTime = ma(CasesDoublingTime, order = 3)) %>%
+  ggplot(aes(x = ReportingDate, y = MovAverageDoublingTime)) + 
+  geom_line(colour = "red", size = 1.2) +
+  scale_x_date(name = "", 
+               breaks = as.Date(c("2020/03/15", "2020/04/01", 
+                                  "2020/04/15", "2020/05/01", "2020/05/15")),
+               labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+    labs(y="")
+#p6.india
+# ggsave(plot=p6.india, 
+#        file =paste0("IndiaCasesDoublingTimeTrend", as.character(Date.Upto, format = "%d%m%Y"), ".png" ),
+#        path = "CovidTrackerV2", width = 8, height = 6, units = "in")
+
+
+## doubling time for deaths
+p7.india <- d %>% filter(Country == "India" & 
+                           ReportingDate > as.Date("2020/04/01") ) %>% 
+  mutate(MovAverageDoublingTime = ma(DeathsDoublingTime, order = 3)) %>%
+  ggplot(aes(x = ReportingDate, y = MovAverageDoublingTime)) + 
+  geom_line(colour = "red", size = 1.2) +
+  scale_x_date(name = "", 
+               breaks = as.Date(c("2020/03/15", "2020/04/01", 
+                                  "2020/04/15", "2020/05/01", "2020/05/15")),
+               labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+    labs(y="")
+#p7.india
+# ggsave(plot=p7.india, 
+#        file =paste0("IndiaDeathsDoublingTimeTrend", as.character(Date.Upto, format = "%d%m%Y"), ".png" ),
+#        path = "CovidTrackerV2", width = 8, height = 6, units = "in")
+
+p8.india <- d %>% filter(Country == "India" & 
+                           ReportingDate > as.Date("2020/03/15") ) %>% 
+  # mutate(MovAverageDoublingTime = ma(CasesDoublingTime, order = 3)) %>%
+  ggplot(aes(x = ReportingDate, y = CasesToDate)) + 
+  geom_line(colour = "red", size = 1.2) +
+  scale_x_date(name = "", 
+               breaks = as.Date(c("2020/03/15", "2020/04/01", 
+                                  "2020/04/15", "2020/05/01", "2020/05/15")),
+               labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+    scale_y_continuous(name="",limits = c(0, 100000), 
+                       breaks = c(20000,40000,60000,80000), 
+                       labels = c("20k","40k","60k","80k"))
+    
+#p8.india
+
+chart.title <- paste("Reported Data", "\nfrom India as upto\n", 
+                     as.character(Date.Upto, format = "%d %b %Y"))
+df <- data.frame(x = 1:10, y = 1:10) ## to create the text plo
+p9.india <- ggplot(df, aes(x, y)) + ## just a blank chart for the label
+  geom_blank() +
+    scale_x_continuous(name="", breaks = NULL, labels=NULL) +
+    scale_y_continuous(name="", breaks = NULL, labels=NULL) +
+    annotate(geom = "text", x=5, y=6, 
+             label = chart.title, 
+             size = 6 )
+#p9.india
+
+IndiaPlot <- plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india, 
+          labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+                     "Doubling time: cases","Doubling time:deaths"),
+          label_size = 12, label_x = c(0, 0.3,0.2,0.2,0.2), label_y = 0.95,
+          rel_widths = c(0.8,1,1),
+          nrow=2, ncol=3)
+IndiaPlot
+
+```
+Note: The doubling times are computed for each day but because they tend to fluctuate day to day the charts are 3 day moving averages of the computed numbers
+
+
+#### © JayEnAar and GorwayGlobal  
+
+####This report will be published every day with the latest data available.
+Report errors and comments to me on Twitter <a href="https://twitter.com/GorwayGlobal?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-show-count="false">Follow @GorwayGlobal</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+#### End of report
+
+
+
+
+
+
