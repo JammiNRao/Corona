@@ -1,7 +1,6 @@
 ---
 title: "A Global Covid19 Pandemic Situation Report"
 author: "JayEnAar"
-date: "19 May 2020"
 output:
   pdf_document: default
   html_document: default
@@ -13,6 +12,7 @@ knitr::opts_chunk$set(echo = FALSE,
                       warning = FALSE
                       )
 ```
+## `r as.character(Sys.Date(), format = "%d %b %Y")`
 ## About this Report
 
 Since cases of a respiratory illness caused by a novel Corona virus were first reported from Wuhan, China, late in 2019, the disease nCovid19 has grown into a pandemic.  
@@ -22,7 +22,7 @@ Data on the daily count of new cases of the infection and of deaths from it are 
 
 ## Data Analytical Methods
 
-I used R and Rstudio to download the data, load it into R and carry out the data manipulation in order to produce suammries and charts that describe the situation as it unfolds. This report was created in [RMarkdown](rmarkdown.rstudio.com). The charts are produced in [ggplot2](http://ggplot2.org) (credit Wickham H (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4.)  
+I used R and Rstudio to download the data, load it into R and carry out the data manipulation in order to produce suammries and charts that describe the global picture. This report was created in [RMarkdown](rmarkdown.rstudio.com). The charts were  produced in [ggplot2](http://ggplot2.org) (credit Wickham H (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4.)  
 
 ## The data
 ```{r load_libraries, echo = FALSE, message = FALSE, include =FALSE}
