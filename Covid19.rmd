@@ -65,7 +65,7 @@ RepDate <- d %>%
   group_by(Country) %>%
   summarise(latest = last(ReportingDate))
 
-Date.Upto <- filter(RepDate, Country == "UK")$latest  ## the most recent date for the UK  
+Date.Upto <- filter(RepDate, Country == "India")$latest  ## the most recent date for the UK  
 top16countries <- as.character(sickest$Country[1:16])
 
 ```
