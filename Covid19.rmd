@@ -22,7 +22,7 @@ Data on the daily count of new cases of the infection and of deaths from it are 
 
 ## Data Analytical Methods
 
-I used R and Rstudio to download the data, load it into R and carry out the data manipulation in order to produce suammries and charts that describe the global picture. This report was created in [RMarkdown](rmarkdown.rstudio.com). The charts were  produced in [ggplot2](http://ggplot2.org) (credit Wickham H (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4.)  
+I used R and Rstudio to download the data, load it into R and carry out the data manipulation in order to produce summaries and charts that describe the global picture. This report was created in [RMarkdown](rmarkdown.rstudio.com). The charts were  produced in [ggplot2](http://ggplot2.org) (credit Wickham H (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4.)  
 
 ## The data
 ```{r load_libraries, echo = FALSE, message = FALSE, include =FALSE}
@@ -30,6 +30,7 @@ library(tidyverse)
 library(cowplot)
 library(forecast)
 library(gridExtra)
+library(ggrepel)
 ```
 
 ```{r Data_Manipulation, echo = FALSE, include = FALSE}
@@ -279,7 +280,8 @@ fastest.growers <- d %>% filter(Country %in% top16countries &
     mutate(Growth.Rate = DeathsToDate/lag(DeathsToDate) -1) %>%
     group_by(Country) %>%
     summarise(Latest.Growth.Rate = last(Growth.Rate)) %>%
-    mutate(ToHighlight = ifelse(Country == "India", "yes", "No"))
+    mutate(ToHighlight = ifelse(Country == "India", "yes", "No")) %>%
+    filter(Latest.Growth.Rate >= 0)
 
 
 fastest.growers$Country <- reorder(fastest.growers$Country, 
@@ -425,17 +427,46 @@ p9.india <- ggplot(df, aes(x, y)) + ## just a blank chart for the label
              size = 6 )
 #p9.india
 
-IndiaPlot <- plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india, 
+
+
+
+IndiaPlot <- plot_grid(p9.india,p8.india, p4.india, p5.india, 
+                       p6.india, p7.india,
           labels = c("", "Cases so far", "Daily cases", "Daily deaths",
-                     "Doubling time: cases","Doubling time:deaths"),
-          label_size = 12, label_x = c(0, 0.3,0.2,0.2,0.2), label_y = 0.95,
-          rel_widths = c(0.8,1,1),
+                     "Doubling time:cases",
+                     "Doubling time:deaths"),
+          label_size = 12, 
+          label_x = c(0,0.2,0.2,0.2,0,0),
+          #rel_widths = c(0.8,1,1),
           nrow=2, ncol=3)
 IndiaPlot
-
 ```
 Note: The doubling times are computed for each day but because they tend to fluctuate day to day the charts are 3 day moving averages of the computed numbers
 
+\newpage
+
+## 9a. Comparison of performance among States.
+
+How are the different States in India performing? Are there difference that may reveal lessons to be learned. I looked at the data for a selection of states with the most Covid19 cases, after correcting for population size.
+
+```{r StatesPlot, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8}
+d.states <- read.csv("IndiaStates.csv", header=TRUE)
+
+
+p10.india <- ggplot(d.states, aes(x= TotalCases/(Popn*10),
+                              y= 100*Deaths/TotalCases, 
+                              label = StateCode)) +
+    geom_point(aes(size = TotalCases), colour = "red")  +
+    geom_text_repel(nudge_y = 0.3, nudge_x = 0.08, size = 6.0) +
+    scale_x_continuous (name = "Cases per 100,000 population") +
+    scale_y_continuous(name = "Deaths per 100 Cases") +
+    labs(title = "States of India - experience with Covid19 epidemic",
+         subtitle = "Only states with large number of cases shown",
+         caption = paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                       (c) JayEnAar  ", "25 May 2020"  )
+     )
+p10.india
+```
 
 #### © JayEnAar and GorwayGlobal  
 
