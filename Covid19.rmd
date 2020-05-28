@@ -461,9 +461,9 @@ p10.india <- ggplot(d.states, aes(x= TotalCases/(Popn*10),
     scale_x_continuous (name = "Cases per 100,000 population") +
     scale_y_continuous(name = "Deaths per 100 Cases") +
     labs(title = "States of India - experience with Covid19 epidemic",
-         subtitle = "Only states with large number of cases shown",
-         caption = paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
-                       (c) JayEnAar  ", "25 May 2020"  )
+         subtitle = "The 14 most affected States plus assam and Kerala are shown",
+         caption = paste("data source: https://https://www.mygov.in/covid-19, 
+                       (c) JayEnAar  ", as.character(Sys.Date(), format = "%d %b %Y")  )
      )
 p10.india
 ```
