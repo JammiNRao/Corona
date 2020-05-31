@@ -294,7 +294,7 @@ p.fastestgrowers <- ggplot(fastest.growers, aes(x=Country, y = Latest.Growth.Rat
     labs(title = "Latest 1-day growth rate in number of cases",
          subtitle = "Top 16 countries by number of cases",
          caption = paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
-                       ? JayEnAar ", as.character(Date.Upto, format = "%d %b %Y") ) ) +
+                       © JayEnAar ", as.character(Date.Upto, format = "%d %b %Y") ) ) +
     scale_y_continuous(breaks = c(0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.1, 0.12),
                      labels = c("0", "1%", "2%", "3%", "4%", "5%", "6%", "7%", "8%", "10%", "12%"),
                      name = "") +
@@ -468,7 +468,7 @@ p10.india <- ggplot(d.states, aes(x= TotalCases/(Popn*10),
 p10.india
 ```
 
-#### Â© JayEnAar and GorwayGlobal  
+#### (c) JayEnAar and GorwayGlobal  
 
 ####This report will be published every day with the latest data available.
 Report errors and comments to me on Twitter <a href="https://twitter.com/GorwayGlobal?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-show-count="false">Follow @GorwayGlobal</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>

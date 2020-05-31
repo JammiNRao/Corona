@@ -1,0 +1,512 @@
+caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv,
+© JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+x = "", y = "Daily Cases")+
+theme(legend.position = "none")
+p5
+ggsave(plot=p5,
+file =paste0("Top16CountriesDailyDeaths", as.character(Date.Upto, format = "%d%m%Y"), ".png" ),
+path = "CovidTrackerV2", width = 10, height = 8, units = "in")
+##*********************************
+##************************************
+#Doublin times
+p6 <- d %>% filter(Country %in% top16countries &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageDoublingTime = ma(CasesDoublingTime, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageDoublingTime,
+group = Country)) +
+geom_line(aes(colour = Country), size = 1.2) +
+scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
+labels = c("15Mar", "15Apr") ) +
+facet_wrap(.~Country, scales = "free") +
+labs(title = "Doubling time for Cumulative number of cases of Covid19",
+subtitle  = "3-day moving average of the daily doubling time ",
+caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv,
+© JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+x = "", y = "Doubling time in days")+
+theme(legend.position = "none")
+p6
+ggsave(plot=p6,
+file =paste0("Top16CountriesCasesDoublingTime", as.character(Date.Upto, format = "%d%m%Y"), ".png" ),
+path = "CovidTrackerV2", width = 10, height = 8, units = "in")
+##*******************************************
+#Deaths doubling time
+p7 <- d %>% filter(Country %in% top16countries &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(DeathsMovAverageDoublingTime = ma(DeathsDoublingTime, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = DeathsMovAverageDoublingTime,
+group = Country)) +
+geom_line(aes(colour = Country), size = 1.2) +
+scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
+labels = c("15Mar", "15Apr") ) +
+facet_wrap(.~Country, scales = "free") +
+labs(title = "Doubling time for Cumulative deaths from Covid19",
+subtitle  = "3-day moving average of the daily doubling time ",
+caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv,
+© JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+x = "", y = "Doubling time in days")+
+theme(legend.position = "none")
+p7
+ggsave(plot=p7,
+file =paste0("Top16CountriesDeathsDoublingTime", as.character(Date.Upto, format = "%d%m%Y"), ".png" ),
+path = "CovidTrackerV2", width = 10, height = 8, units = "in")
+##*******************************************
+sum(sickest$CasesToDate)
+round(sum(sickest$CasesToDate[1:16]) / sum(sickest$CasesToDate) * 100, 1)
+##***********************
+## India specific charts
+# 1. Cases and deaths cumulative time charts
+## cases
+p4.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageCases = ma(cases, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageCases)) +
+geom_line(colour = "red", size = 1.2) +
+#geom_line(aes(y= MovAverageDeaths), colour = "blue", size = 1.3) +
+scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/01", "2020/04/15", "2020/05/01")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay") ) +
+labs(title = "India: daily cases ",
+subtitle  = "3-day moving average",
+# caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv,
+#                © JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+x = "", y = "")+
+theme(legend.position = "none")
+p4.india
+# ggsave(plot=p4.india,
+#        file =paste0("IndiaCasesTrend", as.character(Date.Upto, format = "%d%m%Y"), ".png" ),
+#        path = "CovidTrackerV2", width = 8, height = 6, units = "in")
+## deaths
+p5.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageDeaths = ma(deaths, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageDeaths)) +
+geom_line(colour = "red", size = 1.2) +
+#geom_line(aes(y= MovAverageDeaths), colour = "blue", size = 1.3) +
+scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/01", "2020/04/15", "2020/05/01")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay") ) +
+labs(title = "Daily deaths",
+subtitle  = "3-day moving average ",
+# caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv,
+#                © JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+x = "", y = "")+
+theme(legend.position = "none")
+p5.india
+# ggsave(plot=p5.india,
+#        file =paste0("IndiaDeathsTrend", as.character(Date.Upto, format = "%d%m%Y"), ".png" ),
+#        path = "CovidTrackerV2", width = 8, height = 6, units = "in")
+# 2. Doubling tme for cases and deaths
+##doubling time for cases
+p6.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageDoublingTime = ma(CasesDoublingTime, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageDoublingTime)) +
+geom_line(colour = "red", size = 1.2) +
+scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/01", "2020/04/15", "2020/05/01")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay") ) +
+#facet_wrap(.~Country, scales = "free") +
+labs(title = "Doubling time, cases",
+subtitle  = "3-day moving average",
+# caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv,
+#                © JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+x = "", y = "days")+
+theme(legend.position = "none")
+p6.india
+# ggsave(plot=p6.india,
+#        file =paste0("IndiaCasesDoublingTimeTrend", as.character(Date.Upto, format = "%d%m%Y"), ".png" ),
+#        path = "CovidTrackerV2", width = 8, height = 6, units = "in")
+## doubling time for deaths
+p7.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageDoublingTime = ma(DeathsDoublingTime, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageDoublingTime)) +
+geom_line(colour = "red", size = 1.2) +
+scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/01", "2020/04/15", "2020/05/01")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay") ) +
+#facet_wrap(.~Country, scales = "free") +
+labs(title = "Doubling time, deaths",
+subtitle  = "3-day moving average",
+caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv,
+© JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+x = "", y = "days")+
+theme(legend.position = "none")
+p7.india
+# ggsave(plot=p7.india,
+#        file =paste0("IndiaDeathsDoublingTimeTrend", as.character(Date.Upto, format = "%d%m%Y"), ".png" ),
+#        path = "CovidTrackerV2", width = 8, height = 6, units = "in")
+grid.arrange(p4.india, p5.india, p6.india, p7.india)
+##*********************
+## cases per million population
+cpm <- d %>%
+mutate(cpmillion = 10^6 * CasesToDate/popData2018) %>%
+group_by(Country) %>%
+summarise(CasesToDate = max(CasesToDate),
+DeathsToDate = max(DeathsToDate),
+cpmillion = max(cpmillion),
+DeathRate = round(100 * DeathsToDate/CasesToDate, 1)) %>%
+arrange(cpmillion) %>%
+ungroup()
+##****************************
+##Countries with the highest Deaths to Cases ration
+p1
+p4.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageCases = ma(cases, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageCases)) +
+geom_line(colour = "red", size = 1.2) +
+#geom_line(aes(y= MovAverageDeaths), colour = "blue", size = 1.3) +
+scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/01", "2020/04/15", "2020/05/01")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay") ) +
+labs(title = "India: daily cases ",
+subtitle  = "3-day moving average",
+# caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv,
+#                © JayEnAar ", as.character(Date.Upto, format = "%d %b %Y")),
+x = "", y = "")+
+theme(legend.position = "none")
+p4.india
+p4.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageCases = ma(cases, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageCases)) +
+geom_line(colour = "red", size = 1.2) +
+#geom_line(aes(y= MovAverageDeaths), colour = "blue", size = 1.3) +
+scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/01", "2020/04/15", "2020/05/01")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay") )
+p4.india
+p4.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageCases = ma(cases, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageCases)) +
+geom_line(colour = "red", size = 1.2) +
+#geom_line(aes(y= MovAverageDeaths), colour = "blue", size = 1.3) +
+scale_x_date(name = "", breaks = as.Date(c("2020/03/15", "2020/04/01", "2020/04/15", "2020/05/01")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay") )
+p4.india
+p4.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageCases = ma(cases, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageCases)) +
+geom_line(colour = "red", size = 1.2) +
+#geom_line(aes(y= MovAverageDeaths), colour = "blue", size = 1.3) +
+scale_x_date(name = "", breaks = as.Date(c("2020/03/15", "2020/04/01", "2020/04/15", "2020/05/01")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay") ) +
+labels(y="")
+p4.india
+p4.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageCases = ma(cases, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageCases)) +
+geom_line(colour = "red", size = 1.2) +
+#geom_line(aes(y= MovAverageDeaths), colour = "blue", size = 1.3) +
+scale_x_date(name = "", breaks = as.Date(c("2020/03/15", "2020/04/01", "2020/04/15", "2020/05/01")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay") ) +
+labs(y="")
+p4.india
+p4.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageCases = ma(cases, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageCases)) +
+geom_line(colour = "red", size = 1.2) +
+#geom_line(aes(y= MovAverageDeaths), colour = "blue", size = 1.3) +
+scale_x_date(name = "",
+breaks = as.Date(c("2020/03/15", "2020/04/01",
+"2020/04/15", "2020/05/01", "2020/05/15")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+labs(y="")
+p4.india
+p4.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageCases = ma(cases, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageCases)) +
+geom_line(colour = "red", size = 1.2) +
+scale_x_date(name = "",
+breaks = as.Date(c("2020/03/15", "2020/04/01",
+"2020/04/15", "2020/05/01", "2020/05/15")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+labs(y="")
+p4.india
+p5.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageDeaths = ma(deaths, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageDeaths)) +
+geom_line(colour = "red", size = 1.2) +
+scale_x_date(name = "",
+breaks = as.Date(c("2020/03/15", "2020/04/01",
+"2020/04/15", "2020/05/01", "2020/05/15")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+labs(y="")
+p5.india
+p6.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageDoublingTime = ma(CasesDoublingTime, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageDoublingTime)) +
+geom_line(colour = "red", size = 1.2) +
+scale_x_date(name = "",
+breaks = as.Date(c("2020/03/15", "2020/04/01",
+"2020/04/15", "2020/05/01", "2020/05/15")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+labs(y="")
+p6.india
+p7.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+mutate(MovAverageDoublingTime = ma(DeathsDoublingTime, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageDoublingTime)) +
+geom_line(colour = "red", size = 1.2) +
+scale_x_date(name = "",
+breaks = as.Date(c("2020/03/15", "2020/04/01",
+"2020/04/15", "2020/05/01", "2020/05/15")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+labs(y="")
+p7.india
+p7.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/04/01") ) %>%
+mutate(MovAverageDoublingTime = ma(DeathsDoublingTime, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = MovAverageDoublingTime)) +
+geom_line(colour = "red", size = 1.2) +
+scale_x_date(name = "",
+breaks = as.Date(c("2020/03/15", "2020/04/01",
+"2020/04/15", "2020/05/01", "2020/05/15")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+labs(y="")
+p7.india
+grid.arrange(p4.india, p5.india, p6.india, p7.india)
+View(d)
+d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") )
+p8.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+# mutate(MovAverageDoublingTime = ma(CasesDoublingTime, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = CasesToDate)) +
+geom_line(colour = "red", size = 1.2) +
+scale_x_date(name = "",
+breaks = as.Date(c("2020/03/15", "2020/04/01",
+"2020/04/15", "2020/05/01", "2020/05/15")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+labs(y="")
+p8.india
+?plot_grid
+plot_grid(pr.india, p5.india, p6.india, p7.india, p8.india,
+nrow=2, ncol=2)
+plot_grid(p4.india, p5.india, p6.india, p7.india, p8.india,
+nrow=2, ncol=2)
+plot_grid(p4.india, p5.india, p6.india, p7.india, p8.india,
+nrow=2, ncol=3)
+plot_grid(p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c(),
+nrow=2, ncol=3)
+plot_grid(NULL, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c(),
+nrow=2, ncol=3)
+plot_grid(NULL, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("India's Covid-19 Officially reported data"),
+nrow=2, ncol=3)
+plot_grid(NULL, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("India's Covid-19 Officially reported data", "A", "B", "C","D","E"),
+nrow=2, ncol=3)
+df <- data.frame(x = 1:10, y = 1:10) ## to create the text plo
+base <- ggplot(df, aes(x, y)) +
+geom_blank() +
+theme_bw()
+base + annotation_custom(
+grob = grid::roundrectGrob(),
+xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf
+)
+base <- ggplot(df, aes(x, y)) +
+geom_blank() +
+theme_bw()
+base
+base <- ggplot(df, aes(x, y)) +
+geom_blank()
+base
+ggplot() + theme_void()
+ggplot() + theme_void() + annotate(geom_text("Label"))
+ggplot(mtcars, aes(x = wt, y = mpg)) + geom_blank()
+ggplot(df, aes(x, y)) +
+geom_blank() + labs(x="", y="")
+ggplot(df, aes(x, y)) +
+geom_blank() +
+scale_x_continuous(name="", labels=NULL)
+?scale_x_continuous
+ggplot(df, aes(x, y)) +
+geom_blank() +
+scale_x_continuous(name="", breaks = NULL, labels=NULL)
+ggplot(df, aes(x, y)) +
+geom_blank() +
+scale_x_continuous(name="", breaks = NULL, labels=NULL) +
+scale_y_continuous(name="", breaks = NULL, labels=NULL)
+ggplot(df, aes(x, y)) +
+geom_blank() +
+scale_x_continuous(name="", breaks = NULL, labels=NULL) +
+scale_y_continuous(name="", breaks = NULL, labels=NULL) +
+annotate(geom = text("This"))
+ggplot(df, aes(x, y)) +
+geom_blank() +
+scale_x_continuous(name="", breaks = NULL, labels=NULL) +
+scale_y_continuous(name="", breaks = NULL, labels=NULL) +
+annotate(geom = text("This"))
+ggplot(df, aes(x, y)) +
+geom_blank() +
+scale_x_continuous(name="", breaks = NULL, labels=NULL) +
+scale_y_continuous(name="", breaks = NULL, labels=NULL) +
+annotate(geom = "text", x=5, y=5, label = "India Reported Data", size = 8 )
+p8.india
+p9.india<- ggplot(df, aes(x, y)) +
+geom_blank() +
+scale_x_continuous(name="", breaks = NULL, labels=NULL) +
+scale_y_continuous(name="", breaks = NULL, labels=NULL) +
+annotate(geom = "text", x=5, y=5,
+label = "Reported Data from India", size = 8 )
+p9.india
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+nrow=2, ncol=3)
+p9.india <- ggplot(df, aes(x, y)) + ## just a blank chart for the label
+geom_blank() +
+scale_x_continuous(name="", breaks = NULL, labels=NULL) +
+scale_y_continuous(name="", breaks = NULL, labels=NULL) +
+annotate(geom = "text", x=5, y=5,
+label = "Reported Data from India", size = 6 )
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+nrow=2, ncol=3)
+p9.india <- ggplot(df, aes(x, y)) + ## just a blank chart for the label
+geom_blank() +
+scale_x_continuous(name="", breaks = NULL, labels=NULL) +
+scale_y_continuous(name="", breaks = NULL, labels=NULL) +
+annotate(geom = "text", x=5, y=5,
+label = "Reported Data\n from India", size = 6 )
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+nrow=2, ncol=3)
+?scale_y_continuous
+p8.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+# mutate(MovAverageDoublingTime = ma(CasesDoublingTime, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = CasesToDate)) +
+geom_line(colour = "red", size = 1.2) +
+scale_x_date(name = "",
+breaks = as.Date(c("2020/03/15", "2020/04/01",
+"2020/04/15", "2020/05/01", "2020/05/15")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+scale_y_continuous(name="",limits = c(0, 100000))
+p8.india
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+nrow=2, ncol=3)
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 10,
+nrow=2, ncol=3)
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 10, label_x = 0.2,
+nrow=2, ncol=3)
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 10, label_x = 0.4, label_y = 0.8
+nrow=2, ncol=3)
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 10, label_x = 0.4, label_y = 0.8,
+nrow=2, ncol=3)
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 10, label_x = c(0, 0.3,0.2,0.2,0.2) label_y = 0.95,
+nrow=2, ncol=3)
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 10, label_x = c(0, 0.3,0.2,0.2,0.2), label_y = 0.95,
+nrow=2, ncol=3)
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 10, label_x = c(0, 0.3,0.2,0.2,0.2), label_y = 0.95,
+rel_widths = c(1.1,1),
+nrow=2, ncol=3)
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 10, label_x = c(0, 0.3,0.2,0.2,0.2), label_y = 0.95,
+rel_widths = c(1.2,1),
+nrow=2, ncol=3)
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 10, label_x = c(0, 0.3,0.2,0.2,0.2), label_y = 0.95,
+rel_widths = c(1.2,1,1),
+nrow=2, ncol=3)
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 10, label_x = c(0, 0.3,0.2,0.2,0.2), label_y = 0.95,
+rel_widths = c(0.8,1,1),
+nrow=2, ncol=3)
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 12, label_x = c(0, 0.3,0.2,0.2,0.2), label_y = 0.95,
+rel_widths = c(0.8,1,1),
+nrow=2, ncol=3)
+p9.india <- ggplot(df, aes(x, y)) + ## just a blank chart for the label
+geom_blank() +
+scale_x_continuous(name="", breaks = NULL, labels=NULL) +
+scale_y_continuous(name="", breaks = NULL, labels=NULL) +
+annotate(geom = "text", x=5, y=5,
+label = "Reported Data\n from India as upto\n as.character(Date.Upto, format = "%d %b %Y")"),
+size = 6 )
+as.character(Date.Upto, format = "%d %b %Y")
+p9.india <- ggplot(df, aes(x, y)) + ## just a blank chart for the label
+geom_blank() +
+scale_x_continuous(name="", breaks = NULL, labels=NULL) +
+scale_y_continuous(name="", breaks = NULL, labels=NULL) +
+annotate(geom = "text", x=5, y=5,
+label = "Reported Data \n from India as upto \n 15 May 2020" ,
+size = 6 )
+p9.india
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 12, label_x = c(0, 0.3,0.2,0.2,0.2), label_y = 0.95,
+rel_widths = c(0.8,1,1),
+nrow=2, ncol=3)
+p9.india <- ggplot(df, aes(x, y)) + ## just a blank chart for the label
+geom_blank() +
+scale_x_continuous(name="", breaks = NULL, labels=NULL) +
+scale_y_continuous(name="", breaks = NULL, labels=NULL) +
+annotate(geom = "text", x=5, y=6,
+label = "Reported Data \n from India as upto \n 15 May 2020" ,
+size = 6 )
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 12, label_x = c(0, 0.3,0.2,0.2,0.2), label_y = 0.95,
+rel_widths = c(0.8,1,1),
+nrow=2, ncol=3)
+p8.india <- d %>% filter(Country == "India" &
+ReportingDate > as.Date("2020/03/15") ) %>%
+# mutate(MovAverageDoublingTime = ma(CasesDoublingTime, order = 3)) %>%
+ggplot(aes(x = ReportingDate, y = CasesToDate)) +
+geom_line(colour = "red", size = 1.2) +
+scale_x_date(name = "",
+breaks = as.Date(c("2020/03/15", "2020/04/01",
+"2020/04/15", "2020/05/01", "2020/05/15")),
+labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+scale_y_continuous(name="",limits = c(0, 100000),
+breaks = c(20000,40000,60000,80000),
+labels = c("20k","40k","60k","80k"))
+p8.india
+plot_grid(p9.india, p8.india, p4.india, p5.india, p6.india, p7.india,
+labels = c("", "Cases so far", "Daily cases", "Daily deaths",
+"Doubling time: cases","Doubling time:deaths"),
+label_size = 12, label_x = c(0, 0.3,0.2,0.2,0.2), label_y = 0.95,
+rel_widths = c(0.8,1,1),
+nrow=2, ncol=3)
+setwd("C:/Users/Jammi/Google Drive/R files/DataProjects/Corona/Corona")
