@@ -1,18 +1,18 @@
 ,State,StateCode,TotalCases,Deaths,Popn
-1,Maharashtra,MH,59546,1982,112
-2,Tamil Nadu,TN,19372,145,72.15
-3,Gujarat,GJ,15562,960,60.44
-4,Delhi,DL,16281,316,16.8
-5,Rajasthan,RJ,8067,180,68.5
-6,Madhya Pradesh,MP,7453,321,72.6
-7,Uttar Pradesh, UP,7170,197,199.8
-8,West Bengal,WB,4536,295,91.3
-9,Andhra Pradesh,AP,3251,59,49.57
+1,Maharashtra,MH,65168,2197,112
+2,Tamil Nadu,TN,21184,160,72.15
+3,Gujarat,GJ,16343,1007,60.44
+4,Delhi,DL,18549,416,16.8
+5,Rajasthan,RJ,8617,193,68.5
+6,Madhya Pradesh,MP,7891,343,72.6
+7,Uttar Pradesh, UP,7445,201,199.8
+8,West Bengal,WB,5130,309,91.3
+9,Andhra Pradesh,AP,3569,60,49.57
 10,Bihar,BH,3296,15,104
-11,Karnataka,KA,2533,47,62
-12,Punjab,PN,2158,40,28
-13,Telangana,TL,2256,67,35
-14,Jammu and Kashmir,JK,2036,27,12.5
-15,Odisha,OD,1660,7,46
-16,Kerala,KL,1088,7,36
-17, Assam, AS,856,4,32
+11,Karnataka,KA,2922,48,62
+12,Punjab,PN,2233,44,28
+13,Telangana,TL,2499,77,35
+14,Jammu and Kashmir,JK,2341,28,12.5
+15,Odisha,OD,1819,7,46
+16,Kerala,KL,1208,9,36
+17, Assam, AS,1185,4,32

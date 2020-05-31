@@ -468,7 +468,7 @@ p10.india <- ggplot(d.states, aes(x= TotalCases/(Popn*10),
 p10.india
 ```
 
-#### © JayEnAar and GorwayGlobal  
+#### (c) JayEnAar and GorwayGlobal  
 
 ####This report will be published every day with the latest data available.
 Report errors and comments to me on Twitter <a href="https://twitter.com/GorwayGlobal?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-show-count="false">Follow @GorwayGlobal</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
