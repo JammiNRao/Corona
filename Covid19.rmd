@@ -343,8 +343,8 @@ p4.india <- d %>% filter(Country == "India" &
     geom_line(colour = "red", size = 1.2) +
     scale_x_date(name = "", 
                breaks = as.Date(c("2020/03/15", "2020/04/01", 
-                                  "2020/04/15", "2020/05/01", "2020/05/15")),
-               labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+                                  "2020/04/15", "2020/05/01", "2020/05/15", "2020/05/31")),
+               labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay", "31\nMay") ) +
     labs(y="")
   
 #p4.india
