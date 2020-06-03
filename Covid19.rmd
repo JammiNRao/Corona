@@ -447,7 +447,7 @@ Note: The doubling times are computed for each day but because they tend to fluc
 
 ## 9a. Comparison of performance among States.
 
-How are the different States in India performing? Are there difference that may reveal lessons to be learned. I looked at the data for a selection of states with the most Covid19 cases, after correcting for population size.
+How are the different States in India performing? Are there differences that may reveal lessons to be learned? I looked at the data for a selection of states with the most Covid19 cases, after correcting for population size.
 
 ```{r StatesPlot, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8}
 d.states <- read.csv("IndiaStates.csv", header=TRUE)
