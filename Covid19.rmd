@@ -67,7 +67,7 @@ RepDate <- d %>%
   summarise(latest = last(ReportingDate))
 
 Date.Upto <- filter(RepDate, Country == "India")$latest  ## the most recent date for the UK  
-top16countries <- as.character(sickest$Country[1:16])
+top16countries <- as.character(sickest$Country[1:9])
 
 ```
 The data file comprises 11 columns and upwards of 14,000 rows (growing by the day as  data is added to the file each day). The main columns (or fields) of interest are:  
@@ -145,7 +145,7 @@ p1
 \newpage
 ## 3. Cumulative cases - how the numbers grew. 
 
-The 16 countries with the most cases account for `r round(sum(sickest$CasesToDate[1:16]) / sum(sickest$CasesToDate) * 100, 1)`% of the world's tally.The following chart plots the time trend of cumulative cases for these 16 countries. It's important to note that the numbers vary greatly and so the y axis is scaled differently for each. The trend - steeply or gently upward, or flattening - should be the focus of attention.
+The 9 countries with the most cases account for `r round(sum(sickest$CasesToDate[1:9]) / sum(sickest$CasesToDate) * 100, 1)`% of the world's tally.The following chart plots the time trend of cumulative cases for these 9 countries. It's important to note that the numbers vary greatly and so the y axis is scaled differently for each. The trend - steeply or gently upward, or flattening - should be the focus of attention.
 
 ```{r cases_trend, echo=FALSE, fig.height=8, fig.weight =8}
 p2 <- d %>% #p2 is cumulative cases time trend
@@ -272,7 +272,7 @@ p6
 
 \newpage
 ## 7a. Growth rate across countries
-Countries are at differet stages of the epidemic curve. In section 1 above we looked saw a bar chart comparing countries according to how many people have been infected to date. It might be useful also to compare countries according to the most recent daily growth rate. This transaltes to the current doubling time. The higher the growth rate, the lower the doubling time. India at 11th position in terms of number of cases reported to date, is witnessing a high growth rate,exceeded only by Peru, among the 16 countries with the most cases. 
+Countries are at differet stages of the epidemic curve. In section 1 above we looked saw a bar chart comparing countries according to how many people have been infected to date. It might be useful also to compare countries according to the most recent daily growth rate. This transaltes to the current doubling time. The higher the growth rate, the lower the doubling time. 
 
 ```{r Growth_Rate, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8 }
 fastest.growers <- d %>% filter(Country %in% top16countries & 
