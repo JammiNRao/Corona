@@ -292,7 +292,7 @@ p.fastestgrowers <- ggplot(fastest.growers, aes(x=Country, y = Latest.Growth.Rat
     scale_fill_manual(values = c(A="#FFFF00", B = "#0080FF")) +
     scale_x_discrete("") + 
     labs(title = "Latest 1-day growth rate in number of cases",
-         subtitle = "Top 16 countries by number of cases",
+         subtitle = "Top 9 countries by number of cases",
          caption = paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
                        ? JayEnAar ", as.character(Date.Upto, format = "%d %b %Y") ) ) +
     scale_y_continuous(breaks = c(0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.1, 0.12),
