@@ -128,11 +128,13 @@ p1 <- ggplot(data =sickest[2:25, ],
   geom_point(stat="identity",position="identity", size=3.0, colour = "red") +
   geom_bar(stat="identity", width = 0.1, fill = "blue") +
   scale_x_discrete("") + 
-  scale_y_continuous(breaks = c(0,25000,50000, 75000, 100000, 125000, 150000, 175000, 200000, 250000, 300000, 350000, 400000),
-                     labels = c("0", "25k", "50k", "75k", "100k", "125k", "150k", "175k", "200k", "0.25M", "0.3M", "0.35M", "0.4M"),
+  scale_y_continuous(breaks = c(0,50000, 100000, 200000, 300000, 
+                                400000, 500000, 600000, 700000,800000),
+                     labels = c("0", "50\nk", "100\nk", "200\nk", "300\nk", 
+                                "400\nk", "500\nk", "600\nk", "700\nk", "800\nk"),
                      name = "Cumulative tally of cases") +
   coord_flip() +
-  annotate("text", x = 7, y = 250000, label = summary.text, size = 6) +
+  annotate("text", x = 7, y = 425000, label = summary.text, size = 6) +
   
   labs(title = "Fig 1. Covid19 across the world. \nThe top 25 countries by number of reported cases", 
        subtitle = paste("America, with", format(sickest[[1,2]], big.mark=","), "cases and", format(sickest[[1,3]], big.mark = ","), "deaths has been excluded." ),
@@ -156,8 +158,9 @@ p2 <- d %>% #p2 is cumulative cases time trend
   geom_line(aes(colour = Country), size = 1.2) +
   facet_wrap(.~Country, scales = "free") +
   #scale_x_date(date_breaks = "4 weeks",date_labels = "%b\n %y") +
-  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
-             labels = c("15\nMar", "15\nApr") ) +
+  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15", 
+                                  "2020/05/15", "2020/06/15")),
+             labels = c("15\nMar", "15\nApr", "15\nMay","15\nJun") ) +
   labs(title = "How the number of cases grew over time",
        subtitle = "Cumulative tally of cases of Covid19, 16 March 2020 onwards
 Caution:The Y-axis is not the same for each country",
@@ -182,8 +185,9 @@ p3 <- d %>%  # p3 is cumulative deaths time trend
              group = Country)) + 
   geom_line(aes(colour = Country), size = 1.2) +
   facet_wrap(.~Country, scales = "free") +
-  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
-               labels = c("15Mar", "15Apr") ) +
+  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15", 
+                                  "2020/05/15", "2020/06/15")),
+             labels = c("15\nMar", "15\nApr", "15\nMay","15\nJun") ) +
   labs(title = "How the number of deaths grew over time",
        subtitle = "Cumulative tally of deaths from Covid19, 16 March 2020 onwards
 Caution:The Y-axis is not the same for each country",
@@ -207,8 +211,9 @@ p4 <- d %>% filter(Country %in% top16countries &
   ggplot(aes(x = ReportingDate, y = MovAverageCases, 
              group = Country)) + 
   geom_line(aes(colour = Country), size = 1.2) +
-  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
-               labels = c("15Mar", "15Apr") ) +
+  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15", 
+                                  "2020/05/15", "2020/06/15")),
+             labels = c("15\nMar", "15\nApr", "15\nMay","15\nJun") ) +
   facet_wrap(.~Country, scales = "free") +
   labs(title = "The daily number of cases of Covid19",
        subtitle  = "3-day moving average of the daily number of cases ",
@@ -231,8 +236,9 @@ p5 <- d %>% filter(Country %in% top16countries &
   ggplot(aes(x = ReportingDate, y = MovAverageDeaths, 
              group = Country)) + 
   geom_line(aes(colour = Country), size = 1.2) +
-  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
-               labels = c("15Mar", "15Apr") ) +
+  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15", 
+                                  "2020/05/15", "2020/06/15")),
+             labels = c("15\nMar", "15\nApr", "15\nMay","15\nJun") ) +
   facet_wrap(.~Country, scales = "free") +
   labs(title = "The daily number of deaths from Covid19",
        subtitle  = "3-day moving average of the daily number of deaths ",
@@ -259,8 +265,9 @@ p6 <- d %>% filter(Country %in% top16countries &
   ggplot(aes(x = ReportingDate, y = MovAverageDoublingTime, 
              group = Country)) + 
   geom_line(aes(colour = Country), size = 1.2) +
-  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
-               labels = c("15Mar", "15Apr") ) +
+  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15", 
+                                  "2020/05/15", "2020/06/15")),
+             labels = c("15\nMar", "15\nApr", "15\nMay","15\nJun") ) +
   facet_wrap(.~Country, scales = "free") +
   labs(title = "Doubling time for Cumulative number of cases of Covid19",
        subtitle  = "3-day moving average of the daily doubling time ",
@@ -316,8 +323,9 @@ p7 <- d %>% filter(Country %in% top16countries &
   ggplot(aes(x = ReportingDate, y = DeathsMovAverageDoublingTime, 
              group = Country)) + 
   geom_line(aes(colour = Country), size = 1.2) +
-  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15")),
-               labels = c("15Mar", "15Apr") ) +
+  scale_x_date(breaks = as.Date(c("2020/03/15", "2020/04/15", 
+                                  "2020/05/15", "2020/06/15")),
+             labels = c("15\nMar", "15\nApr", "15\nMay","15\nJun") ) +
   facet_wrap(.~Country, scales = "free") +
   labs(title = "Doubling time for Cumulative deaths from Covid19",
        subtitle  = "3-day moving average of the daily doubling time ",
