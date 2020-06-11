@@ -31,6 +31,7 @@ library(cowplot)
 library(forecast)
 library(gridExtra)
 library(ggrepel)
+library(reshape2)
 ```
 
 ```{r Data_Manipulation, echo = FALSE, include = FALSE}
@@ -447,28 +448,182 @@ Note: The doubling times are computed for each day but because they tend to fluc
 
 ## 9a. Comparison of performance among States.
 
-How are the different States in India performing? Are there differences that may reveal lessons to be learned? I looked at the data for a selection of states with the most Covid19 cases, after correcting for population size.
+How are the different States in India performing? Are there differences that may reveal lessons to be learned? I obtained a rtime series data set for States in India from: https://t.co/lfRdu7epRj?amp=1. I linked this data with population estimates for each State from variius sources on the web. These are not the most recent estimates and there may be more accurate numbers I could have used, but for the purpose of comparing the incidence per million population the estimates I used are adequate.  
 
-```{r StatesPlot, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8}
-d.states <- read.csv("IndiaStates.csv", header=TRUE)
+### 9a.1  
+```{r StatesPlot1, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8}
+d.states <- read.csv(url("https://t.co/lfRdu7epRj?amp=1")) %>%
+    melt(id = c(1:2)) %>% 
+    dcast(formula = Date + variable ~ Status, value.var = "value") %>%
+    mutate(Date = as.Date(Date, format = "%d-%b-%y")) %>%
+    arrange(Date)
+colnames(d.states) <- c("Date", "StateCode","Cases", "Deaths", "Recovered") 
 
+##***********************
+#The data  file comes with State codes. So create a look up table with full state names()
+state.codes <- unique(d.states$StateCode)
+state.name  <- c("AllIndia", "Andaman and Nicobar", "Andhra Pradesh", "Arunachal Pradesh",
+                 "Assam", "Bihar", "Chandigarh", "Chattisgarh", "Dadra and Nagar Haveli", 
+                 "Daman and Diu", "Delhi", "Goa", "Gujarat",
+                 "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka",
+                 "Kerala", "Lakshadweep", "Ladakh", "Madhya Pradesh", "Maharashtra", 
+                 "Manipur", "Meghalaya","Mizoram",
+                 "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", 
+                 "Sikkim", "Tamil Nadu", "Telangana",
+                 "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "UnAssigned")
+state.population <- c(1250, 0.4, 51,1.4, 31.2, 105, 1.1, 25.9, 0.35, 0.25,17.0, 1.6, 61.5, 
+                      25.8, 6.9, 12.6, 33.5,62.1, 
+                      34.2,NA, NA,74.5,115.0, 
+                      2.9,3.1,1.2,
+                      2.1, 42.1,1.4, 27.9,69.5,
+                      NA, 72.9, 36.1, 
+                      3.7,201.5,11.2, 92.5, NA)
+                      
+StatesIndia <- data.frame(state.codes, state.name, state.population,stringsAsFactors = FALSE)
+##*******************************
 
-p10.india <- ggplot(d.states, aes(x= TotalCases/(Popn*10),
-                              y= 100*Deaths/TotalCases, 
-                              label = StateCode)) +
-    geom_point(aes(size = TotalCases), colour = "red")  +
-    geom_text_repel(nudge_y = 0.3, nudge_x = 0.08, size = 6.0) +
-    scale_x_continuous (name = "Cases per 100,000 population") +
-    scale_y_continuous(name = "Deaths per 100 Cases") +
-    labs(title = "States of India - experience with Covid19 epidemic",
-         subtitle = "The 14 most affected States plus assam and Kerala are shown",
-         caption = paste("data source: https://https://www.mygov.in/covid-19, 
-                       (c) JayEnAar  ", as.character(Sys.Date(), format = "%d %b %Y")  )
-     )
-p10.india
+d.states <- inner_join(d.states, StatesIndia, by = c("StateCode" = "state.codes"))
+
+##*********************
+#d is now the data we need and has the structure we need to analyse
+# data.frame':	3354 obs. of  6 variables:
+#  $ Date      : Date, format: "2020-03-14" "2020-03-14" "2020-03-14" ...
+#  $ StateCode : Factor w/ 39 levels "TT","AN","AP",..: 1 2 3 4 5 6 7 8 9 10 ...
+#  $ Cases     : int  81 0 1 0 0 0 0 0 0 0 ...
+#  $ Deaths    : int  2 0 0 0 0 0 0 0 0 0 ...
+#  $ Recovered : int  9 0 0 0 0 0 0 0 0 0 ...
+#  $ state.name: chr  "AllIndia" "Andaman and Nicobar" "Andhra Pradesh" "Arunachal Pradesh" ...
+
+##************************
+
+d.states <- d.states %>%
+    group_by(StateCode) %>%
+    arrange(Date, .by_group = TRUE) %>%
+    mutate(CasesToDate = cumsum(Cases), 
+           DeathsToDate = cumsum(Deaths),
+           RecoveriesToDate = cumsum(Recovered),
+           CFR = DeathsToDate / (DeathsToDate + RecoveriesToDate)) %>%
+    ungroup()
+
+SickestState <- d.states %>%
+    group_by(StateCode) %>%
+    arrange(Date, .by_group = TRUE) %>%
+    summarise(CasesToDate = max(CasesToDate),
+              DeathsToDate = max(DeathsToDate),
+              RecoveredToDate = last(RecoveriesToDate),
+              DeathRate = last(CFR),
+              State.Population = last(state.population)) %>%
+    arrange(desc(CasesToDate)) %>%
+    ungroup()
+#View(SickestState)
+Date.Latest <- d.states[nrow(d.states),]$Date
+##************
+## plot1
+SickestState$StateCode <- reorder(SickestState$StateCode, SickestState$DeathRate, FUN = identity)
+plot1 <- SickestState[1:12, ] %>%
+    filter(! StateCode %in% c("UN","TT")) %>%
+    ggplot(aes(x=StateCode, y= DeathRate*100)) +
+    geom_point(stat="identity",position="identity", size=5.0, colour = "red") +
+    geom_col(width = 0.12, colour = "blue") +
+    coord_flip() +
+    scale_x_discrete("Top 10 States by No of infections") +
+    scale_y_continuous("%") +
+    labs(title = "Covid-19 Case fatality rate by State", 
+         subtitle = "case fatality calculated as Deaths/(Deaths+Recovered)", 
+         caption = paste("data source: https://t.co/lfRdu7epRj?amp=1, 
+                         © JayEnAar ", as.character(Date.Latest, format = "%d %b %Y") ) ) +
+    theme(axis.text = element_text(face = "bold", size = 12),
+          axis.title = element_text(size = 14),
+          plot.title = element_text(size = 18),
+          plot.subtitle = element_text(size = 14),
+          plot.caption = element_text(face= "bold", size = 12) )
+plot1
+## ***********************************
 ```
 
-#### Â© JayEnAar and GorwayGlobal  
+### 9a.2
+```{r StatesPlot2, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8}
+##plot2
+unallocated <- subset(SickestState, StateCode == "UN")$CasesToDate
+SickestState$StateCode <- reorder(SickestState$StateCode, SickestState$CasesToDate, FUN = identity)
+plot2 <- SickestState[1:12, ] %>%
+    filter(! StateCode %in% c("UN","TT")) %>%
+    ggplot(aes(x=StateCode, y= CasesToDate)) +
+    geom_point(stat="identity",position="identity", size=5.0, colour = "red") +
+    geom_col(width = 0.12, colour = "blue") +
+    coord_flip() +
+    scale_x_discrete("top 10 States") +    
+    scale_y_continuous("",breaks = c(1000, 10000, 20000, 30000,40000, 50000, 60000, 70000, 80000),
+                       labels = c("1k", "10k", "20k", "30k", "40k", "50k", "60k", "70k", "80k")) +
+    labs(title = "Covid-19 Cumulative Number of cases by State", 
+         subtitle = paste("excludes", unallocated, "cases that were not allocated to a State"), 
+         caption = paste("data source: https://t.co/lfRdu7epRj?amp=1, 
+                         © JayEnAar & GorwayGlobal ", 
+                         as.character(Date.Latest, format = "%d %b %Y") ) ) +
+    theme(axis.text = element_text(face = "bold", size = 12),
+          axis.title = element_text(size = 14),
+          plot.title = element_text(size = 18),
+          plot.subtitle = element_text(size = 14),
+          plot.caption = element_text(face= "bold", size = 12) )
+plot2
+##*********************************************
+```
+
+###9a.3
+```{r StatesPlot3, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8}
+#plot3 grid of states by epidemic curve
+sickstates <- SickestState[1:14, ] %>%
+    filter(! StateCode %in% c("UN","TT"))
+sickstatescodes <- as.character(sickstates$StateCode)
+    
+plot3 <- d.states %>% 
+    filter(StateCode %in% sickstatescodes) %>%
+    ggplot(aes(x = Date, y = CasesToDate, 
+             group = StateCode)) + 
+  geom_line(aes(colour = StateCode), size = 1.2) +
+  facet_wrap(. ~ StateCode, scales = "free") +
+  
+  labs(title = "How the number of cases grew over time",
+       subtitle = "Cumulative tally of cases of Covid19, 16 March 2020 onwards
+Caution:The Y-axis is not the same for each State",
+       caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                       © JayEnAar & GorwayGlobal ", as.character(Date.Latest, format = "%d %b %Y")),
+       x = "", y = "Cumulative count of cases")+
+    theme(legend.position = "none", 
+          axis.text = element_text(face = "bold", size = 12),
+          axis.title = element_text(size = 14),
+          plot.title = element_text(size = 18),
+          plot.subtitle = element_text(size = 14),
+          plot.caption = element_text(face= "bold", size = 12) )
+plot3  
+```
+
+### 9a.4
+```{r StatesPlot4, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8}
+#plot4, scatter plot of population incidence and case fatality
+plot4 <- SickestState[1:17, ] %>%
+    filter(! StateCode %in% c("UN","TT")) %>%
+    ggplot(aes( x= CasesToDate/State.Population, 
+                y =DeathRate*100,
+                label = StateCode)) +
+    geom_point(colour = "dark red", size = 2.5) +
+    geom_text_repel(nudge_y = 0.5) +
+    scale_x_continuous("Cases per million population") +
+    scale_y_continuous("Case fatality rate - estimated") +
+    labs(title = "Indian States. Case fatality v Population incidence of Covid19",
+         subtitle = "Case Fatality defined as deaths/(deaths+recovered); State populations are estimates",
+         caption = paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                       (c) JayEnAar ", as.character(Date.Latest, format = "%d %b %Y") ) ) +
+    theme(axis.text = element_text(face = "bold", size = 12),
+          axis.title = element_text(size = 14),
+          plot.title = element_text(size = 18),
+          plot.subtitle = element_text(size = 14),
+          plot.caption = element_text(size = 12) )
+plot4
+```
+
+
+#### © JayEnAar and GorwayGlobal  
 
 ####This report will be published every day with the latest data available.
 Report errors and comments to me on Twitter <a href="https://twitter.com/GorwayGlobal?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-show-count="false">Follow @GorwayGlobal</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
