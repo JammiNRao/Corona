@@ -539,7 +539,7 @@ plot1 <- SickestState[1:12, ] %>%
     labs(title = "Covid-19 Case fatality rate by State", 
          subtitle = "case fatality calculated as Deaths/(Deaths+Recovered)", 
          caption = paste("data source: https://t.co/lfRdu7epRj?amp=1, 
-                         © JayEnAar ", as.character(Date.Latest, format = "%d %b %Y") ) ) +
+                         ? JayEnAar ", as.character(Date.Latest, format = "%d %b %Y") ) ) +
     theme(axis.text = element_text(face = "bold", size = 12),
           axis.title = element_text(size = 14),
           plot.title = element_text(size = 18),
@@ -566,7 +566,7 @@ plot2 <- SickestState[1:12, ] %>%
     labs(title = "Covid-19 Cumulative Number of cases by State", 
          subtitle = paste("excludes", unallocated, "cases that were not allocated to a State"), 
          caption = paste("data source: https://t.co/lfRdu7epRj?amp=1, 
-                         © JayEnAar & GorwayGlobal ", 
+                         ? JayEnAar & GorwayGlobal ", 
                          as.character(Date.Latest, format = "%d %b %Y") ) ) +
     theme(axis.text = element_text(face = "bold", size = 12),
           axis.title = element_text(size = 14),
@@ -595,7 +595,7 @@ plot3 <- d.states %>%
        subtitle = "Cumulative tally of cases of Covid19, 16 March 2020 onwards
 Caution:The Y-axis is not the same for each State",
        caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
-                       © JayEnAar & GorwayGlobal ", as.character(Date.Latest, format = "%d %b %Y")),
+                       ? JayEnAar & GorwayGlobal ", as.character(Date.Latest, format = "%d %b %Y")),
        x = "", y = "Cumulative count of cases")+
     theme(legend.position = "none", 
           axis.text = element_text(face = "bold", size = 12),
@@ -631,7 +631,7 @@ plot4
 ```
 
 
-#### © JayEnAar and GorwayGlobal  
+#### (c) JayEnAar and GorwayGlobal  
 
 ####This report will be published every day with the latest data available.
 Report errors and comments to me on Twitter <a href="https://twitter.com/GorwayGlobal?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-show-count="false">Follow @GorwayGlobal</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
