@@ -351,9 +351,9 @@ p4.india <- d %>% filter(Country == "India" &
     ggplot(aes(x = ReportingDate, y = MovAverageCases)) + 
     geom_line(colour = "red", size = 1.2) +
     scale_x_date(name = "", 
-               breaks = as.Date(c("2020/03/15", "2020/04/01", 
-                                  "2020/04/15", "2020/05/01", "2020/05/15", "2020/05/31")),
-               labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay", "31\nMay") ) +
+               breaks = as.Date(c("2020/03/15", "2020/04/15", 
+                                  "2020/05/15", "2020/06/15")),
+               labels = c("15\nMar", "15\nApr", "15\nMay", "15\nJun") ) +
     labs(y="")
   
 #p4.india
@@ -367,9 +367,9 @@ p5.india <- d %>% filter(Country == "India" &
   ggplot(aes(x = ReportingDate, y = MovAverageDeaths)) + 
   geom_line(colour = "red", size = 1.2) +
   scale_x_date(name = "", 
-               breaks = as.Date(c("2020/03/15", "2020/04/01", 
-                                  "2020/04/15", "2020/05/01", "2020/05/15")),
-               labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+               breaks = as.Date(c("2020/03/15", "2020/04/15", 
+                                  "2020/05/15", "2020/06/15")),
+               labels = c("15\nMar", "15\nApr", "15\nMay", "15\nJun") ) +
     labs(y="")
 #p5.india
 # ggsave(plot=p5.india, 
@@ -383,9 +383,9 @@ p6.india <- d %>% filter(Country == "India" &
   ggplot(aes(x = ReportingDate, y = MovAverageDoublingTime)) + 
   geom_line(colour = "red", size = 1.2) +
   scale_x_date(name = "", 
-               breaks = as.Date(c("2020/03/15", "2020/04/01", 
-                                  "2020/04/15", "2020/05/01", "2020/05/15")),
-               labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+               breaks = as.Date(c("2020/03/15", "2020/04/15", 
+                                  "2020/05/15", "2020/06/15")),
+               labels = c("15\nMar", "15\nApr", "15\nMay", "15\nJun") ) +
     labs(y="")
 #p6.india
 # ggsave(plot=p6.india, 
@@ -400,9 +400,9 @@ p7.india <- d %>% filter(Country == "India" &
   ggplot(aes(x = ReportingDate, y = MovAverageDoublingTime)) + 
   geom_line(colour = "red", size = 1.2) +
   scale_x_date(name = "", 
-               breaks = as.Date(c("2020/03/15", "2020/04/01", 
-                                  "2020/04/15", "2020/05/01", "2020/05/15")),
-               labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+               breaks = as.Date(c("2020/03/15", "2020/04/15", 
+                                  "2020/05/15", "2020/06/15")),
+               labels = c("15\nMar", "15\nApr", "15\nMay", "15\nJun") ) +
     labs(y="")
 #p7.india
 # ggsave(plot=p7.india, 
@@ -415,9 +415,9 @@ p8.india <- d %>% filter(Country == "India" &
   ggplot(aes(x = ReportingDate, y = CasesToDate)) + 
   geom_line(colour = "red", size = 1.2) +
   scale_x_date(name = "", 
-               breaks = as.Date(c("2020/03/15", "2020/04/01", 
-                                  "2020/04/15", "2020/05/01", "2020/05/15")),
-               labels = c("15\nMar", "01\nApr", "15\nApr", "01\nMay", "15\nMay") ) +
+               breaks = as.Date(c("2020/03/15", "2020/04/15", 
+                                  "2020/05/15", "2020/06/15")),
+               labels = c("15\nMar", "15\nApr", "15\nMay", "15\nJun") ) +
     scale_y_continuous(name="",limits = c(0, 100000), 
                        breaks = c(20000,40000,60000,80000), 
                        labels = c("20k","40k","60k","80k"))
@@ -539,7 +539,7 @@ plot1 <- SickestState[1:12, ] %>%
     labs(title = "Covid-19 Case fatality rate by State", 
          subtitle = "case fatality calculated as Deaths/(Deaths+Recovered)", 
          caption = paste("data source: https://t.co/lfRdu7epRj?amp=1, 
-                         ? JayEnAar ", as.character(Date.Latest, format = "%d %b %Y") ) ) +
+                         (c) JayEnAar ", as.character(Date.Latest, format = "%d %b %Y") ) ) +
     theme(axis.text = element_text(face = "bold", size = 12),
           axis.title = element_text(size = 14),
           plot.title = element_text(size = 18),
@@ -566,7 +566,7 @@ plot2 <- SickestState[1:12, ] %>%
     labs(title = "Covid-19 Cumulative Number of cases by State", 
          subtitle = paste("excludes", unallocated, "cases that were not allocated to a State"), 
          caption = paste("data source: https://t.co/lfRdu7epRj?amp=1, 
-                         ? JayEnAar & GorwayGlobal ", 
+                         (c) JayEnAar & GorwayGlobal ", 
                          as.character(Date.Latest, format = "%d %b %Y") ) ) +
     theme(axis.text = element_text(face = "bold", size = 12),
           axis.title = element_text(size = 14),
@@ -595,7 +595,7 @@ plot3 <- d.states %>%
        subtitle = "Cumulative tally of cases of Covid19, 16 March 2020 onwards
 Caution:The Y-axis is not the same for each State",
        caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
-                       ? JayEnAar & GorwayGlobal ", as.character(Date.Latest, format = "%d %b %Y")),
+                       (c) JayEnAar & GorwayGlobal ", as.character(Date.Latest, format = "%d %b %Y")),
        x = "", y = "Cumulative count of cases")+
     theme(legend.position = "none", 
           axis.text = element_text(face = "bold", size = 12),
