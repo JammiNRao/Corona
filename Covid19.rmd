@@ -36,6 +36,7 @@ library(reshape2)
 
 ```{r Data_Manipulation, echo = FALSE, include = FALSE}
 data <- read.csv(url("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv"))
+colnames(data)[1] <- "dateRep"
 data$countriesAndTerritories <- gsub("United_States_of_America", "USA", data$countriesAndTerritories)
 data$countriesAndTerritories <- gsub("United_Kingdom", "UK", data$countriesAndTerritories)
 d <- data  %>% 
