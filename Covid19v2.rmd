@@ -1,0 +1,587 @@
+---
+title: "Coronavirus Pandemic Situation Report "
+author: "GorwayGlobal Consulting"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE,
+                      warning = FALSE
+                      )
+```
+## `r as.character(Sys.Date(), format = "%d %b %Y")`
+## About this Report
+
+Since cases of a respiratory illness caused by a novel Corona virus were first reported from Wuhan, China, late in 2019, the disease nCovid19 has grown into a pandemic.  
+
+Almost every country in the World is affected to a greater or lesser degree.  
+Data on the daily count of new cases of the infection and of deaths are reported by health authorities and collated by various international agencies and Universities. This report draws on data from two sources:
+
+1. International country-specific data is from  a publicly available data set that is updated every day and published on its website by the European Centre for Disease Control, [downloadable from here](https://opendata.ecdc.europa.eu/covid19/casedistribution/csv). <https://opendata.ecdc.europa.eu/covid19/casedistribution/csv>  
+
+2. The data on Indian States is [from here](https://t.co/lfRdu7epRj?amp=1) <https://t.co/lfRdu7epRj?amp=1>
+
+## Data Analytical Methods
+
+I used R and RStudio to download the data, load it into R and carry out the data manipulation in order to produce the charts that describe the picture. This report was created in [RMarkdown](rmarkdown.rstudio.com). The charts were  produced in [ggplot2](http://ggplot2.org) (credit Wickham H (2016). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. ISBN 978-3-319-24277-4.)  
+
+
+```{r load_libraries, echo = FALSE, message = FALSE, include =FALSE}
+library(tidyverse)
+library(cowplot)
+library(forecast)
+library(gridExtra)
+library(ggrepel)
+library(reshape2)
+library(utils)
+
+
+```
+
+```{r HelperFunction, echo = FALSE, include = FALSE}
+# helper function to calculate the number of cases in recent 14 days
+recentcumsum <- function(x, n) { # x is a numeric vectior, n is a number less than length(x)
+    # returns a vector of length x os the sum mof last n values of x
+    # padding with leading NAs as necessary
+    z <- numeric(length = length(x))
+    for (i in 1:length(x)) {
+        x.sofar <- x[1:i]
+        if (i <= n) {
+            z[i] <-  NA  
+        }
+        else { z[i] <- sum(lead(x.sofar, length(x.sofar)-n), na.rm = TRUE)
+        
+        }
+    }
+    return(z)
+}
+
+```
+
+```{r Data_Manipulation, echo = FALSE, include = FALSE}
+data <- read.csv(url("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv"))
+# colnames(data)[1] <- "dateRep"
+#data <- read.csv("C:/Users/Lenovo/Google Drive/R files/DataProjects/Corona/corona/ecdc_20JunCovid.csv")
+data$countriesAndTerritories <- gsub("United_States_of_America", "USA", data$countriesAndTerritories)
+data$countriesAndTerritories <- gsub("United_Kingdom", "UK", data$countriesAndTerritories)
+d <- data  %>% 
+  mutate(ReportingDate = as.Date(as.character(dateRep), format = "%d/%m/%Y"),
+         cases = ifelse(cases <0, 0, cases)) %>%
+  group_by(countriesAndTerritories) %>%
+  arrange(ReportingDate, .by_group = TRUE) %>%
+  mutate(CasesToDate = cumsum(cases), 
+         DeathsToDate = cumsum(deaths)) %>%
+  #select(ReportingDate, countriesAndTerritories, cases, deaths, 
+        # CasesToDate, DeathsToDate) %>%
+  mutate(CasesDoublingTime = log(2)/log(CasesToDate/lag(CasesToDate)),
+         DeathsDoublingTime = log(2)/log(DeathsToDate/lag(DeathsToDate)) ) %>%
+  ungroup() %>%
+  rename(Country = countriesAndTerritories,
+         CountryCode = countryterritoryCode,
+         Continent = continentExp
+         )
+  
+sickest <- d %>%
+  group_by(Country) %>%
+  summarise(CasesToDate = max(CasesToDate),
+            DeathsToDate = max(DeathsToDate),
+            DeathRate = round(100 * DeathsToDate/CasesToDate, 1),
+            Population = last(popData2019),
+            CountryCode = last(CountryCode)
+            ) %>%
+  arrange(desc(CasesToDate)) %>%
+  ungroup()
+
+## To extract the most recet reporting date for the title in the charts
+RepDate <- d %>% 
+  group_by(Country) %>%
+  
+  summarise(latest = last(ReportingDate))
+Date.Upto <- filter(RepDate, Country == "UK")$latest  ## the most recent date for the UK    
+
+
+
+## Indian states data
+d.states <- read.csv(url("https://t.co/lfRdu7epRj?amp=1")) %>%
+    melt(id = c(1:2)) %>% 
+    dcast(formula = Date + variable ~ Status, 
+          value.var = "value") %>%
+    mutate(Date = as.Date(Date, format = "%d-%b-%y")) %>%
+    arrange(Date)
+colnames(d.states) <- c("Date", "StateCode","Cases", "Deaths", "Recovered") 
+
+##***********************
+#The data  file comes with State codes. So create a look up table with full state names()
+state.codes <- unique(d.states$StateCode)
+state.name  <- c("AllIndia", "Andaman and Nicobar", "Andhra Pradesh", "Arunachal Pradesh",
+                 "Assam", "Bihar", "Chandigarh", "Chattisgarh", "Dadra and Nagar Haveli", 
+                 "Daman and Diu", "Delhi", "Goa", "Gujarat",
+                 "Haryana", "Himachal Pradesh", "Jammu and Kashmir", "Jharkhand", "Karnataka",
+                 "Kerala", "Lakshadweep", "Ladakh", "Madhya Pradesh", "Maharashtra", 
+                 "Manipur", "Meghalaya","Mizoram",
+                 "Nagaland", "Odisha", "Puducherry", "Punjab", "Rajasthan", 
+                 "Sikkim", "Tamil Nadu", "Telangana",
+                 "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "UnAssigned")
+state.population <- c(1250, 0.4, 51,1.4, 31.2, 105, 1.1, 25.9, 0.35, 0.25,17.0, 1.6, 61.5, 
+                      25.8, 6.9, 12.6, 33.5,62.1, 
+                      34.2,NA, NA,74.5,115.0, 
+                      2.9,3.1,1.2,
+                      2.1, 42.1,1.4, 27.9,69.5,
+                      NA, 72.9, 36.1, 
+                      3.7,201.5,11.2, 92.5, NA)
+                      
+StatesIndia <- data.frame(state.codes, state.name, state.population,stringsAsFactors = FALSE)
+##*******************************
+
+d.states <- inner_join(d.states, StatesIndia, by = c("StateCode" = "state.codes"))
+
+##*********************
+#d is now the data we need and has the structure we need to analyse
+# data.frame':	3354 obs. of  6 variables:
+#  $ Date      : Date, format: "2020-03-14" "2020-03-14" "2020-03-14" ...
+#  $ StateCode : Factor w/ 39 levels "TT","AN","AP",..: 1 2 3 4 5 6 7 8 9 10 ...
+#  $ Cases     : int  81 0 1 0 0 0 0 0 0 0 ...
+#  $ Deaths    : int  2 0 0 0 0 0 0 0 0 0 ...
+#  $ Recovered : int  9 0 0 0 0 0 0 0 0 0 ...
+#  $ state.name: chr  "AllIndia" "Andaman and Nicobar" "Andhra Pradesh" "Arunachal Pradesh" ...
+
+##************************
+
+d.states <- d.states %>%
+    group_by(StateCode) %>%
+    arrange(Date, .by_group = TRUE) %>%
+    mutate(CasesToDate = cumsum(Cases), 
+           DeathsToDate = cumsum(Deaths),
+           RecoveriesToDate = cumsum(Recovered),
+           CFR = DeathsToDate / (DeathsToDate + RecoveriesToDate)) %>%
+    ungroup()
+
+SickestState <- d.states %>%
+    group_by(StateCode) %>%
+    arrange(Date, .by_group = TRUE) %>%
+    summarise(CasesToDate = max(CasesToDate),
+              DeathsToDate = max(DeathsToDate),
+              RecoveredToDate = last(RecoveriesToDate),
+              DeathRate = last(CFR),
+              State.Population = last(state.population)) %>%
+    arrange(desc(CasesToDate)) %>%
+    ungroup()
+#View(SickestState)
+Date.Latest <- d.states[nrow(d.states),]$Date
+##************
+## plot1
+SickestState$StateCode <- reorder(SickestState$StateCode, SickestState$DeathRate, FUN = identity)
+
+states.RQ <- d.states %>%  ## recburd calculates recent burden of cases 
+    filter(!(StateCode %in% c("TT", "UN"))) %>%
+    group_by(StateCode) %>%
+    arrange(Date, .by_group = TRUE) %>%
+    mutate(CasesLast14Days = recentcumsum(Cases, 14) ) %>%
+    ungroup()
+
+top10states <- states.RQ %>% 
+    filter(StateCode %in% SickestState$StateCode[2:9] & 
+               Date > as.Date("2020/04/15")) %>%
+    mutate(RQ = CasesLast14Days/CasesToDate)  %>%
+    group_by(StateCode) %>%
+    mutate(label1 = ifelse(Date == as.Date("2020/05/07"), as.character(StateCode), ""),
+           label2 = ifelse(Date == last(Date), as.character(StateCode), ""),
+           label3 = ifelse(Date == as.Date("2020/05/17"), as.character(StateCode), "")) %>%
+    
+    ungroup() %>%
+    select(Date, RQ, StateCode, label1, label2, label3)
+
+```
+
+## Plan of the Report
+
+The Report is structured as follows:  
+
+1. Global headlines and country wide comparisons  
+
+2. Country-wise  comparison.  
+
+3. The situation in India
+
+## 1. The headlines
+
+Across the `r nrow(sickest)` Countries and Territories of the World there were a total of **`r format(sum(sickest$CasesToDate), big.mark = ",")`** cases and **`r format(sum(sickest$DeathsToDate), big.mark = ",")`** deaths.  
+
+In India there have so far been **`r format(filter(sickest, Country == "India")$CasesToDate, big.mark = ",")`** cases reported, and  **`r format(filter(sickest, Country == "India")$DeathsToDate, big.mark = ",")`** deaths.  
+
+The 10 worst affected countries have a combined population of **`r round(sum(sickest[1:10,]$Population, na.rm = TRUE)/10^9, 2)`** billion people - **`r round(sum(sickest[1:10,]$Population, na.rm = TRUE)/sum(sickest$Population, na.rm = TRUE) *100, 1)`** % of the world's total- and account for **`r round(sum(sickest[1:10,]$CasesToDate, na.rm = TRUE)/sum(sickest$CasesToDate, na.rm = TRUE) *100, 1)`** percent of the total infections and **`r round(sum(sickest[1:10,]$DeathsToDate, na.rm = TRUE)/sum(sickest$DeathsToDate, na.rm = TRUE) *100, 1)`** percent of all deaths. 
+ 
+\newpage
+## 2. The top 25 most severely affected countries  
+
+America and Brazil have been excluded from thias chart because the huge number of cases in these two countries distorts the chart by squashing all the other countries'into the left of the chart.  
+
+```{r lollipop, echo = FALSE, fig.height=10, fig.width = 9}
+top16countries <- as.character(sickest$Country[1:16])
+top8countries <- as.character(sickest$Country[1:8])
+#1. Lollipop chart of top 25 countries tally of cases to date
+## to reorder the levels of the Country names
+sickest$Country <- reorder(sickest$Country, sickest$CasesToDate, FUN = identity)
+summary.text <- paste("Worldwide there have been \n", 
+                      format(sum(sickest$CasesToDate), big.mark= ","),
+                      "cases; and ", 
+                      format(sum(sickest$DeathsToDate, na.rm = TRUE), big.mark= ","),
+                      "deaths. \nIndia's had", format( subset(sickest, Country == "India")[[1,2]], big.mark=","),
+                      "cases; ", subset(sickest, Country == "India")[[1,3]],
+                      "deaths"
+)
+
+
+sickest <- mutate(sickest, ToHighlight = ifelse(Country == "India", "yes", "No"))
+p1 <- ggplot(data =sickest[3:25, ],
+            aes(x=Country, y = CasesToDate )) +
+  geom_point(stat="identity",position="identity", size=3.0, colour = "red") +
+  geom_col(aes(fill=ifelse(Country == "India", "A", "B")), width = 0.22) +
+  scale_fill_manual(values = c(A="#FFFF00", B = "#0080FF")) +
+  scale_x_discrete("") + 
+  scale_y_continuous(breaks = c(50000,100000, 200000,300000, 400000, 500000,
+                                600000, 800000, 1000000, 1200000),
+                     labels = c("50k", "100k", "0.2M", "0.3M", "0.4M", "0.5M", "0.6M", 
+                                "0.85M", "1M", "1.2M"),
+                     name = "Cumulative tally of cases") +
+  coord_flip() +
+    theme(legend.position = "none") +
+  annotate("text", x = 6, y = 415000, label = summary.text, size = 6) +
+  
+  labs(title = "Covid19 across the world. \nThe top 25 countries by number of reported cases", 
+       subtitle = paste("America(",format(sickest[[1,2]], big.mark=","), "cases and", format(sickest[[1,3]], big.mark = ","), "deaths) and 
+Brazil(",format(sickest[[2,2]], big.mark=","), "cases and",format( sickest[[2,3]], big.mark = ","), "deaths) have been excluded." ),
+       caption = paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                       © JayEnAar ", as.character(Date.Upto, format = "%d %b %Y") )
+       )
+p1
+
+```
+  
+\newpage
+## 3. The recency quotient. 
+Comparing the number of cases across countries is problematic because countries differ greatly in their population characteristics. Large countries wil naturally have more cases. The proportion of total cases that occurred in the last 14 days is a measure that I call the Recency Quotient. It is a measure of how 'young' a country's epidemic is - whether it is still growing or is petering out due to effective control measures. The measure is internally referenced and so allows comparisons independent of population characteristics. In essence it  measures the on-going performace of each country's control measures.   
+
+
+```{r cases_trend, echo=FALSE, fig.height=7.5, fig.width=7}
+recburd <- d %>%  ## recburd calculates recent burden of cases 
+    group_by(Country) %>%
+    arrange(ReportingDate, .by_group = TRUE) %>%
+    mutate(CasesLast14Days = recentcumsum(cases, 14) ) %>%
+    ungroup()
+topcountries <- sickest$Country[1:25]
+#recburd$Country <- reorder(recburd$Country, recburd$last14days/recburd$cases, FUN = identity)
+stillgrowing <- recburd %>%
+    filter(Country %in% topcountries) %>%
+    group_by(Country) %>%
+    summarise(last14days = last(CasesLast14Days),
+              cases = last(CasesToDate) ) 
+stillgrowing$Country <- reorder(stillgrowing$Country, 
+                                stillgrowing$last14days/stillgrowing$cases, 
+                                FUN = identity)
+p2 <- stillgrowing %>%
+    ggplot(aes(x=Country, 
+               y = last14days/cases)) +
+    
+    geom_point(stat="identity",position="identity", size=3.0, colour = "red") +
+    geom_col(fill= "blue", width = 0.11) +
+    coord_flip() +
+    scale_x_discrete("") +
+    scale_y_continuous("%age of all cases that occurred in last 14 days",
+                       breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6),
+                       labels = c("0", "10%", "20%", "30%", "40%", "50%", "60%")) +
+    labs(title = "Recency Quotient - the top 25 countries", 
+         subtitle = "RQ is the %age of total infections in last 14 days",
+         caption = paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                         © JayEnAar ", as.character(Date.Upto, format = "%d %b %Y") ) )
+
+
+p2 
+
+```
+
+\newpage
+## 4. Recency quotient time trends across countries  
+
+The recency quotient can also be calculated for every day to generate a time series for each country. A time series plot can reveal the rate at which a country's epidemic is growing or slowing down. For clarity this chart shows the time trends in the recency quotient for the 8 most affected countries only. 
+
+```{r deaths_trend, echo=FALSE, warning=FALSE, fig.height=8, fig.weight = 8} 
+India.RQ <- recburd %>% 
+    filter(Country == "India" & ReportingDate > as.Date("2020/04/15")) %>%
+    mutate(RQ = CasesLast14Days/CasesToDate) %>%
+    select(ReportingDate, RQ, CountryCode)
+countrycolors <- c("India" = "black")
+countrylines <- c("India" = 1)
+top16recburd <- recburd %>% 
+    filter(Country %in% sickest$Country[1:8] & 
+               ReportingDate > as.Date("2020/04/15")) %>%
+    mutate(RQ = CasesLast14Days/CasesToDate)  %>%
+    group_by(CountryCode) %>%
+    mutate(label1 = ifelse(ReportingDate == last(ReportingDate), as.character(CountryCode), ""),
+           label2 = ifelse(ReportingDate == as.Date("2020/05/05"), as.character(CountryCode), "") ) %>%
+    ungroup() %>%
+    select(ReportingDate, RQ, CountryCode, label1, label2)
+
+plot.rq <- top16recburd %>%
+    ggplot(aes(x = ReportingDate, y = RQ), colour = CountryCode) + 
+    geom_line(aes(colour = CountryCode)) +
+    geom_text(aes(label = label1), hjust = "outward") +
+    geom_text(aes(label = label2)) +
+    geom_line(data = India.RQ, aes(y=RQ), colour= "black", size = 1.1) +
+    #scale_colour_brewer(palette = "") +
+    #scale_colour_viridis_d() 
+    theme(legend.position = "none") +
+    labs(title = "Recency Quotient over time", 
+         subtitle = "RQ is the %age of total infections that occurred in last 14 days",
+         caption = paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                         © JayEnAar ", as.character(Date.Upto, format = "%d %b %Y") ),
+         y= "RQ - Recency quotient") +
+    scale_y_continuous("RQ - Recency quotient", 
+                       breaks = c(0, 0.25, 0.5, 0.75),
+                       labels = c("0", "25%", "50%", "75%")) +
+    scale_x_date(name = "", 
+                 breaks = as.Date(c("2020/04/15", "2020/05/01", "2020/05/15", 
+                                    "2020/06/01", "2020/06/15", "2020/07/01")),
+                 labels = c("15\nApr", "01\nMay", "15\nMay", 
+                            "01\nJun", "15\nJun", "01\nJul")
+    )
+
+
+plot.rq
+
+```
+
+\newpage
+## 5. India's epidemic - daily cases
+Many countries are reporting a drop in the daily incidence of new infection. Not so in India where the reported daily number of cases have been mounting ever since the start and are still on an upward trend.
+
+```{r dailycases, echo=FALSE, warning = FALSE, fig.width = 8, fig.height = 8}
+countries <- c("India", "Germany", "Italy", "Spain", "UK")
+countrycolors <- c("India" = "red", "Germany" = "blue", "Italy" = "darkgoldenrod4", 
+                   "Spain"= "violet", "UK" = "lightblue")
+countrylines <- c("India" = 1, "Germany" = 5, "Italy" = 1, "Spain" = 4, "UK" = 1)
+px <- d %>% 
+    filter(Country %in% countries & ReportingDate > as.Date("2020/03/01")) %>% 
+    ggplot(aes(x = ReportingDate, y = cases, 
+               colour = Country )) + 
+    geom_line(aes(linetype = Country), size = 1.2) +
+    scale_color_manual(values = countrycolors) +
+    scale_linetype_manual(values = countrylines)+
+    scale_x_date(name = "", 
+                 breaks = as.Date(c("2020/03/15", "2020/04/01", "2020/04/15", 
+                                    "2020/05/01", "2020/05/15", "2020/06/01", 
+                                    "2020/06/15", "2020/07/01")),
+                 labels = c("15\nMar", "01\nApr", "15\nApr", 
+                            "01\nMay", "15\nMay", "01\nJun", "15\nJun","01\nJul") ) +
+    scale_y_continuous("Cases each day") +
+    labs(title = "Daily cases of Coronavirus infection",
+         subtitle  = "4-countries comparison, India, Italy, Germany and Spain",
+         caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                        © JayEnAar ", as.character(Date.Upto, format = "%d %b %Y"))
+         )
+
+
+px
+
+
+```
+\newpage
+
+## 6. India's epidemic - Cumulative cases to date
+The epidemic in India started later than many other countries that were badly affected at the start of the pandemic. 
+
+```{r cumulativecases, warning = FALSE, echo = FALSE,fig.width = 8, fig.height = 8}
+countries <- c("India", "Germany", "Italy", "Spain", "UK")
+countrycolors <- c("India" = "red", "Germany" = "blue", "Italy" = "darkgoldenrod4", 
+                   "Spain"= "violet", "UK" = "lightblue")
+countrylines <- c("India" = 1, "Germany" = 5, "Italy" = 1, "Spain" = 4, "UK" = 1)
+px <- d %>% 
+    filter(Country %in% countries & ReportingDate > as.Date("2020/03/01")) %>% 
+    ggplot(aes(x = ReportingDate, y = CasesToDate, 
+               colour = Country )) + 
+    geom_line(aes(linetype = Country), size = 1.2) +
+    scale_color_manual(values = countrycolors) +
+    scale_linetype_manual(values = countrylines)+
+    scale_x_date(name = "", 
+                 breaks = as.Date(c("2020/03/15", "2020/04/01", "2020/04/15", 
+                                    "2020/05/01", "2020/05/15", "2020/06/01", 
+                                    "2020/06/15", "2020/07/01")),
+                 labels = c("15\nMar", "01\nApr", "15\nApr", 
+                            "01\nMay", "15\nMay", "01\nJun", "15\nJun","01\nJul") ) +
+    scale_y_continuous("Total infections to date", 
+                       breaks = c(1e+05, 2e+05, 3e+05, 4e+05, 5e+05, 6e+05, 7e+05 ),
+                       labels = c("0.1M", "0.2M", "0.3M", "0.4M", "0.5M", "0.6M", "0.7M")) +
+    labs(title = "Cumulative total of Coronavirus infections",
+         subtitle  = "India's epidemic was slow to take off but is still growing",
+         caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                        © JayEnAar ", as.character(Date.Upto, format = "%d %b %Y"))
+         )
+
+
+px
+```
+\newpage
+## 6. India's epidemic - daily deaths
+India has reported relatively few deaths, given both the size of its population and the number of infections. The unusual spike in the data for India is due to a data problem. On June 17 Maharashtra and Delhi reported an unusual number of deaths. This was a data correction to account for earlier under-reporting.
+
+```{r dailydeaths, warning = FALSE, echo = FALSE,fig.width = 8, fig.height = 8}
+countries <- c("India", "UK", "Iran", "Peru", "Germany","Chile")
+countrycolors <- c("India" = "red", "Iran" = "blue4", 
+                   "UK" = "darkgreen", "Peru"= "violet", "Germany" = "cyan1", "Chile" = "blueviolet" )
+countrylines <- c("India" = 1, "Iran" = 5, "UK" = 1, "Peru" = 4, "Germany" = 1, "Chile" = 3)
+py <- d %>% 
+    filter(Country %in% countries & ReportingDate > as.Date("2020/03/01")) %>% 
+    ggplot(aes(x = ReportingDate, y = deaths, 
+               colour = Country )) + 
+    geom_line(aes(linetype = Country), size = 1.2) +
+    scale_color_manual(values = countrycolors) +
+    scale_linetype_manual(values = countrylines)+
+    scale_x_date(name = "", 
+                 breaks = as.Date(c("2020/03/15", "2020/04/01", "2020/04/15", 
+                                    "2020/05/01", "2020/05/15", "2020/06/01", 
+                                    "2020/06/15", "2020/07/01")),
+                 labels = c("15\nMar", "01\nApr", "15\nApr", 
+                            "01\nMay", "15\nMay", "01\nJun",
+                            "15\nJun", "01\nJul") ) +
+    scale_y_continuous("Deaths each day") +
+    labs(title = "Daily deaths from Covid19",
+         subtitle  = "The spike on 17 June in India's deaths is a data problem",
+         caption =paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                       © JayEnAar ", as.character(Date.Upto, format = "%d %b %Y"))
+         )
+
+
+py
+```
+
+\newpage
+## 7. Variation in mortality and incidence   
+Comparisons across countries are potentially misleading unless they take account of differences in population sizes. It is possible to calculate a crude population incidence (cases per million population) and a crude mortality indicator (deaths per 100 cases). It is important to note that this is not the same as the case fatality rate for which a defined cohort needs to be followed up.  
+
+```{r MortalityV_Incidence, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8}
+plot.by.pop <- sickest %>% slice(1:16) %>%
+    ggplot(aes(x = 10^5*CasesToDate/Population, 
+               y = DeathRate,
+               label = CountryCode)) +
+            geom_point(colour = "dark red", size = 2.5) +
+            geom_text_repel(nudge_y = 0.5) +
+    scale_x_continuous("Cases per 100,000 Population") +
+    scale_y_continuous("Deaths per 100 cases") +
+    labs(title = "Mortality v Population incidence",
+         subtitle = "The 16 countries with the most reported cases are included",
+         caption = paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                       (c) JayEnAar ", as.character(Date.Upto, format = "%d %b %Y") ) )
+plot.by.pop
+
+
+```
+
+\newpage
+## 8. The picture wthin India. The epidemic in the India's States and Union Territories.
+The picture within India varies greatly across the States. Maharashtra is the most affected state by far followed by Tamil Nadu, Delhi and Gujarat. These 4 States make up **`r round(sum(SickestState$CasesToDate[2:5])/SickestState[[1,2]]*100, 1)`** % of the total for India.
+
+```{r States_CumulCases, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8 }
+unallocated <- subset(SickestState, StateCode == "UN")$CasesToDate
+SickestState$StateCode <- reorder(SickestState$StateCode, SickestState$CasesToDate, FUN = identity)
+plot2 <- SickestState[1:12, ] %>%
+    filter(! StateCode %in% c("UN","TT")) %>%
+    ggplot(aes(x=StateCode, y= CasesToDate)) +
+    geom_point(stat="identity",position="identity", size=5.0, colour = "red") +
+    geom_col(width = 0.12, colour = "blue") +
+    coord_flip() +
+    scale_x_discrete("top 10 States") +    
+    scale_y_continuous("",breaks = c(1000, 20000, 40000, 60000, 80000, 100000, 120000, 150000, 200000),
+                       labels = c("1k", "20k", "40k","60k", "80k", "100k", "120k", "150k", "200k")) +
+    labs(title = "Covid-19 Cumulative Number of cases by State", 
+         subtitle = paste("excludes", unallocated, "cases that were not allocated to a State"), 
+         caption = paste("data source: https://t.co/lfRdu7epRj?amp=1, 
+                         © JayEnAar & GorwayGlobal ", 
+                         as.character(Date.Latest, format = "%d %b %Y") ) ) 
+    # theme(axis.text = element_text(face = "bold", size = 12),
+    #       axis.title = element_text(size = 14),
+    #       plot.title = element_text(size = 18),
+    #       plot.subtitle = element_text(size = 14),
+    #       plot.caption = element_text(face= "bold", size = 12) )
+plot2
+
+
+```
+
+\newpage
+## 9..Mortality variation between States 
+
+```{r States_Mortality_v_Incidence, warning = FALSE, echo = FALSE,fig.width = 8, fig.height=8}
+plot4 <- SickestState[1:17, ] %>%
+    filter(! StateCode %in% c("UN","TT")) %>%
+    ggplot(aes( x= CasesToDate/State.Population, 
+                y =DeathRate*100,
+                label = StateCode)) +
+    geom_point(colour = "dark red", size = 2.5) +
+    geom_text_repel(nudge_y = 0.3) +
+    scale_x_continuous("Cases per million population") +
+    scale_y_continuous("Case fatality rate - estimated") +
+    labs(title = "Indian States. Case fatality v Population incidence of Covid19",
+         subtitle = "Case Fatality defined as deaths/(deaths+recovered); State populations are estimates",
+         caption = paste("data source: https://t.co/lfRdu7epRj?amp=1, 
+                         © JayEnAar & GorwayGlobal ", 
+                         as.character(Date.Latest, format = "%d %b %Y") ) ) +
+    theme(axis.text = element_text(face = "bold", size = 8),
+          axis.title = element_text(size = 12),
+          plot.title = element_text(size = 14),
+          plot.subtitle = element_text(size = 14),
+          plot.caption = element_text(size = 12) )
+plot4
+```
+
+\newpage  
+## 10. India's epidemic Recency quotient in the States.
+```{r States_RQ, warning = FALSE, echo = FALSE,fig.width = 8, fig.height = 8}
+states.RQ <- d.states %>%  ## recburd calculates recent burden of cases 
+    filter(!(StateCode %in% c("TT", "UN"))) %>%
+    group_by(StateCode) %>%
+    arrange(Date, .by_group = TRUE) %>%
+    mutate(CasesLast14Days = recentcumsum(Cases, 14) ) %>%
+    ungroup()
+
+top10states <- states.RQ %>% 
+    filter(StateCode %in% SickestState$StateCode[2:9] & 
+               Date > as.Date("2020/04/15")) %>%
+    mutate(RQ = CasesLast14Days/CasesToDate)  %>%
+    group_by(StateCode) %>%
+    mutate(label1 = ifelse(Date == as.Date("2020/05/07"), as.character(StateCode), ""),
+           label2 = ifelse(Date == last(Date), as.character(StateCode), ""),
+           label3 = ifelse(Date == as.Date("2020/05/17"), as.character(StateCode), "")) %>%
+    
+    ungroup() %>%
+    select(Date, RQ, StateCode, label1, label2, label3)
+states.rqplot <- top10states %>%
+    ggplot(aes(x = Date, y = RQ), colour = StateCode) + 
+    geom_line(aes(colour = StateCode)) +
+    geom_text(aes(label = label1), hjust = "outward") +
+    geom_text(aes(label = label2), hjust = "outward") +
+    geom_text(aes(label = label3), hjust = "outward") +
+    #geom_line(data = India.RQ, aes(y=RQ), colour= "black", size = 1.1) +
+    #scale_colour_brewer(palette = "") +
+    #scale_colour_viridis_d() 
+    theme(legend.position = "none") +
+    labs(title = "Recency Quotient over time in the 8 states with the most cases", 
+         subtitle = "RQ is the proportion of total infections that occurred in last 14 days",
+         caption = paste("data source: https://opendata.ecdc.europa.eu/covid19/casedistribution/csv, 
+                         © JayEnAar ", as.character(Date.Upto, format = "%d %b %Y") ),
+         y= "RQ - recency quotient") +
+    scale_x_date(name = "", 
+                 breaks = as.Date(c("2020/04/15", "2020/05/01", "2020/05/15", 
+                                    "2020/06/01", "2020/06/15", "2020/07/01")),
+                 labels = c("15\nApr", "01\nMay", "15\nMay", "01\nJun", "15\nJun", "01\nJul")
+    )
+states.rqplot
+```
+
+#### © JayEnAar and GorwayGlobal  
+
+####This report will be published peiodically with the latest data available. and will be available on my [git hub respository](https://github.com/JammiNRao/Corona/blob/master/Covid19v2.pdf) at <https://github.com/JammiNRao/Corona/blob/master/Covid19v2.pdf>  
+Report errors and comments to me on Twitter <a href="https://twitter.com/GorwayGlobal?ref_src=twsrc%5Etfw" class="twitter-follow-button" data-show-count="false">Follow @GorwayGlobal</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+#### End of report

@@ -32,15 +32,22 @@ library(forecast)
 library(gridExtra)
 library(ggrepel)
 library(reshape2)
+library(utils)
+
+#read the Dataset sheet into “R”. The dataset will be called "data".
+# data <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", #fileEncoding = "UTF-8-BOM")
 ```
 
 ```{r Data_Manipulation, echo = FALSE, include = FALSE}
-data <- read.csv(url("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv"))
-colnames(data)[1] <- "dateRep"
+#data <- read.csv(url("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv"))
+#read the Dataset sheet into “R”. The dataset will be called "data".
+#data <- read.csv("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", na.strings = "", #fileEncoding = "UTF-8-BOM")
+#colnames(data)[1] <- "dateRep"
+data <- read.csv("ecdc_20JunCovid.csv")
 data$countriesAndTerritories <- gsub("United_States_of_America", "USA", data$countriesAndTerritories)
 data$countriesAndTerritories <- gsub("United_Kingdom", "UK", data$countriesAndTerritories)
 d <- data  %>% 
-  mutate(ReportingDate = as.Date(as.character(dateRep), format = "%d/%m/%Y")) %>%
+  mutate(ReportingDate = as.Date(as.character(dateRep), format = "%m/%d/%Y")) %>%
   group_by(countriesAndTerritories) %>%
   arrange(ReportingDate, .by_group = TRUE) %>%
   mutate(CasesToDate = cumsum(cases), 
@@ -312,6 +319,7 @@ p.fastestgrowers <- ggplot(fastest.growers, aes(x=Country, y = Latest.Growth.Rat
 
 p.fastestgrowers
 ```
+
 
 
 \newpage
